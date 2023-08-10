@@ -13,6 +13,9 @@ const UserSchema = new mongoose.Schema({
   email: {
     type: String
   },
+  profilePic: {
+    type: String
+  },
   username: {
     type: String
   },
@@ -21,29 +24,25 @@ const UserSchema = new mongoose.Schema({
   },
 
   movies: {
-    collection:
-    {
-        tiers: mongoose.Schema.Types.Mixed,
-        cards: mongoose.Schema.Types.Mixed
-    },
-    todo:
-    {
-        tiers: mongoose.Schema.Types.Mixed,
-        cards: mongoose.Schema.Types.Mixed
-    }
+    collectionTiers: mongoose.Schema.Types.Mixed,
+    todoTiers: mongoose.Schema.Types.Mixed,
+    customAttributes: mongoose.Schema.Types.Mixed,
   },
   tv: {
-    type: Date
+    collectionTiers: mongoose.Schema.Types.Mixed,
+    todoTiers: mongoose.Schema.Types.Mixed,
+    customAttributes: mongoose.Schema.Types.Mixed,
   },
   anime: {
-    type: String
+    collectionTiers: mongoose.Schema.Types.Mixed,
+    todoTiers: mongoose.Schema.Types.Mixed,
+    customAttributes: mongoose.Schema.Types.Mixed,
   },
   games: {
-    type: String
-  },
-  music: {
-    type: String
-  },
+    collectionTiers: mongoose.Schema.Types.Mixed,
+    todoTiers: mongoose.Schema.Types.Mixed,
+    customAttributes: mongoose.Schema.Types.Mixed,
+  }
 });
 
 module.exports = User = mongoose.model('User', UserSchema);
