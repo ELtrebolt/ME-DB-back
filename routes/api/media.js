@@ -32,7 +32,6 @@ router.get('/:mediaType/:ID', (req, res) => {
 // @description add/save media
 // @access Public
 router.post('/', (req, res) => {
-  console.log(req.body.userID)
   User.findOne({ ID: req.body.userID })
     .then(u => {
       mid = {'ID':u.anime.total+1}
@@ -58,12 +57,12 @@ router.post('/', (req, res) => {
   .catch(err => res.status(400).json({ error: err }));
 });
 
-// @route GET api/media/:id
+// @route PUT api/media/:id
 // @description Update media
 // @access Public
 router.put('/:mediaType/:ID', (req, res) => {
   const query = {
-    userID: req.user.ID,
+    userID: req.body.userID,
     mediaType: req.params.mediaType, 
     ID: req.params.ID, 
   };
