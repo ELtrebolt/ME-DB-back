@@ -7,7 +7,7 @@ const cors = require("cors");
 const passportSetup = require("./passport");
 const passport = require("passport");
 const authRoute = require("./routes/auth");
-const books = require('./routes/api/books');
+const media = require('./routes/api/media');
 
 const app = express();
 connectDB();
@@ -20,15 +20,17 @@ app.use(passport.session());
 
 app.use(
 cors({
-
     origin: "http://localhost:3000",    // true
     methods: "GET,POST,PUT,DELETE",
     credentials: true,
 }));
 
+// Middleware to parse JSON data
+app.use(express.json());
+
 // use Routes
-app.use('/api/books', books);
-app.use("/auth", authRoute);
+app.use('/api/media', media);
+app.use('/auth', authRoute);
 
 const port = process.env.PORT || 8082;
 app.listen(port, () => console.log(`Server running on port ${port}`));

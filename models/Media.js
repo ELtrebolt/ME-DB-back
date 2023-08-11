@@ -1,8 +1,12 @@
 const mongoose = require('mongoose');
 
-const CardSchema = new mongoose.Schema({
+const MediaSchema = new mongoose.Schema({
   userID: {
     type: String,
+    required: true
+  },
+  ID: {
+    type: Number,
     required: true
   },
   mediaType: {
@@ -18,14 +22,14 @@ const CardSchema = new mongoose.Schema({
     required: true
   },
   toDo: {
-    type: Boolean,
+    type: String,
     required: true
   },
 
   year: {
-    type: Date
+    type: String
   },
   customAttributes: mongoose.Schema.Types.Mixed
 });
 
-module.exports = Card = mongoose.model('Card', CardSchema);
+module.exports = Media = mongoose.model('Media', MediaSchema);

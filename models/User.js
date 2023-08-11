@@ -10,10 +10,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  email: {
+  profilePic: {
     type: String
   },
-  profilePic: {
+  email: {
     type: String
   },
   username: {
@@ -24,21 +24,25 @@ const UserSchema = new mongoose.Schema({
   },
 
   movies: {
+    total: Number,
     collectionTiers: mongoose.Schema.Types.Mixed,
     todoTiers: mongoose.Schema.Types.Mixed,
     customAttributes: mongoose.Schema.Types.Mixed,
   },
   tv: {
+    total: Number,
     collectionTiers: mongoose.Schema.Types.Mixed,
     todoTiers: mongoose.Schema.Types.Mixed,
     customAttributes: mongoose.Schema.Types.Mixed,
   },
   anime: {
+    total: Number,
     collectionTiers: mongoose.Schema.Types.Mixed,
     todoTiers: mongoose.Schema.Types.Mixed,
     customAttributes: mongoose.Schema.Types.Mixed,
   },
   games: {
+    total: Number,
     collectionTiers: mongoose.Schema.Types.Mixed,
     todoTiers: mongoose.Schema.Types.Mixed,
     customAttributes: mongoose.Schema.Types.Mixed,
