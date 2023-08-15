@@ -14,7 +14,7 @@ router.get('/test', (req, res) => res.send('media route testing!'));
 // @description Get all media
 // @access Public
 router.get('/', (req, res) => {
-  Media.find({ userID: req.headers['userid'] })
+  Media.find({ userID: req.headers['userid'], toDo: req.headers['todo'] === 'true' })
     .then(media => res.json(media))
     .catch(err => res.status(404).json({ message: 'No Media found' }));
 });

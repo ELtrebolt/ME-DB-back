@@ -22,12 +22,12 @@ const MediaSchema = new mongoose.Schema({
     required: true
   },
   toDo: {
-    type: String,
+    type: Boolean,
     required: true
   },
 
   year: {
-    type: String
+    type: Number
   },
   customAttributes: mongoose.Schema.Types.Mixed
 });
