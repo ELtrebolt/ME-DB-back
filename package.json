@@ -1,7 +1,6 @@
 {
   "name": "me-db1",
   "version": "1.0.0",
-  "description": "",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
@@ -23,6 +22,16 @@
     "passport-google-oauth20": "^2.0.0"
   },
   "devDependencies": {
+    "dotenv": "^16.3.1",
     "nodemon": "^3.0.1"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ELtrebolt/ME-DB-back.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ELtrebolt/ME-DB-back/issues"
+  },
+  "homepage": "https://github.com/ELtrebolt/ME-DB-back#readme",
+  "description": ""
 }
