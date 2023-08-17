@@ -13,15 +13,6 @@ const UserSchema = new mongoose.Schema({
   profilePic: {
     type: String
   },
-  email: {
-    type: String
-  },
-  username: {
-    type: String
-  },
-  password: {
-    type: String
-  },
 
   movies: {
     total: Number,

@@ -4,10 +4,11 @@ const connectDB = require('./config/db');
 const cookieSession = require("cookie-session");
 const express = require("express");
 const cors = require("cors");
-const passportSetup = require("./passport");
+const passportSetup = require("./passport");  // needed otherwise Unknown authentication strategy "google"
 const passport = require("passport");
 const authRoute = require("./routes/auth");
 const media = require('./routes/api/media');
+const constants = require('./config/constants');
 
 const app = express();
 connectDB();
@@ -20,7 +21,7 @@ app.use(passport.session());
 
 app.use(
 cors({
-    origin: "http://localhost:3000",    // true
+    origin: constants['CLIENT_URL'],    // true
     methods: "GET,POST,PUT,DELETE",
     credentials: true,
 }));

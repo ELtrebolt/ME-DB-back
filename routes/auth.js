@@ -1,7 +1,8 @@
 const router = require("express").Router();
 const passport = require("passport");
+const constants = require('../config/constants');
 
-const CLIENT_URL = "http://localhost:3000"
+const CLIENT_URL = constants['CLIENT_URL']
 
 router.get("/login/failed", (req, res) => {
     res.status(401).json({

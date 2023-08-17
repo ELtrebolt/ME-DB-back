@@ -14,7 +14,9 @@ router.get('/test', (req, res) => res.send('media route testing!'));
 // @description Get all media
 // @access Public
 router.get('/', (req, res) => {
-  Media.find({ userID: req.headers['userid'], toDo: req.headers['todo'] === 'true' })
+  Media.find({ userID: req.headers['userid'], 
+            toDo: req.headers['todo'] === 'true',
+            mediaType: req.headers['mediatype'] })
     .then(media => res.json(media))
     .catch(err => res.status(404).json({ message: 'No Media found' }));
 });
@@ -32,19 +34,22 @@ router.get('/:mediaType/:ID', (req, res) => {
 // @description add/save media
 // @access Public
 router.post('/', (req, res) => {
-  User.findOne({ ID: req.body.userID })
+  const userID = req.body.userID;
+  const mediaType = req.body.mediaType
+  User.findOne({ ID: userID })
     .then(u => {
-      mid = {'ID':u.anime.total+1}
-      Media.create({...req.body, ...mid})
+
+      m_id = {'ID':u[mediaType].total+1}
+      Media.create({...req.body, ...m_id})
       .then(media => {
         console.log("Media created:", media.title);
         User.findOneAndUpdate(
-          { ID: req.body.userID }, 
-          { $inc: { 'anime.total': 1 } }, 
+          { ID: userID }, 
+          { $inc: { [`${mediaType}.total`]: 1 } }, 
           { new: true } // Return the updated user document
         )
         .then(updatedUser => {
-          console.log("Count updated:", updatedUser.anime.total);
+          console.log(`${mediaType} Count updated:`, updatedUser[mediaType].total);
           res.json({ msg: 'Media added successfully!' })
         })
         .catch(error => {
