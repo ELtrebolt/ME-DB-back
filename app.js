@@ -13,7 +13,6 @@ const constants = require('./config/constants');
 const app = express();
 connectDB();
 
-app.enable("trust proxy");
 app.use(
     cookieSession({ name: "session", keys: ["lama"], maxAge: 24 * 60 * 60 * 100 })
   );
