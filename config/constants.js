@@ -7,7 +7,7 @@
 // For Deployment
 const json = {
     'CLIENT_URL': "https://me-db.vercel.app",
-    'SERVER_CALLBACK_URL': "https://me-db.cyclic.cloud.com/auth/google/callback"
+    'SERVER_CALLBACK_URL': "https://me-db.cyclic.cloud/auth/google/callback"
 };
 
 module.exports = json;
