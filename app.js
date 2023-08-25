@@ -13,22 +13,22 @@ const constants = require('./config/constants');
 const app = express();
 connectDB();
 
-// Middleware to parse JSON data
-app.use(express.json());
-
-app.use(
-  cors({
-      origin: constants['CLIENT_URL'],    // true
-      methods: "GET,POST,PUT,DELETE",
-      credentials: true,
-  }));
-
 app.set('trust proxy', 1) 
 app.use(
     cookieSession({ name: "session", keys: ["lama"], maxAge: 24 * 60 * 60 * 100 })
   );
 app.use(passport.initialize());
 app.use(passport.session());
+
+app.use(
+cors({
+    origin: constants['CLIENT_URL'],    // true
+    methods: "GET,POST,PUT,DELETE",
+    credentials: true,
+}));
+
+// Middleware to parse JSON data
+app.use(express.json());
 
 // use Routes
 app.use('/api/media', media);
