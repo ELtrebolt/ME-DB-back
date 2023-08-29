@@ -34,6 +34,11 @@ app.use(function(request, response, next) {
   next()
 })
 
+// this function checks if req.session.passport.user exists
+// if it does it will call passport.session()
+// if it finds a serialized user object in the session,
+// it will consider this req is authenticated. And then deserializeUser() will be invoked
+// it will retrieve the user and attach it to req.user
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -42,7 +47,7 @@ app.use(
 cors({
     origin: constants['CLIENT_URL'],    // true
     methods: "GET,POST,PUT,DELETE",
-    credentials: true,
+    credentials: true
 }));
 
 // Middleware to parse JSON data
@@ -51,11 +56,12 @@ app.use(express.json());
 // use Routes
 app.use('/api/media', media);
 app.use('/auth', authRoute);
-// Only for local not deploy - not sure if this works tho
-// app.use((req, res, next) => {
-//   res.setHeader('Referrer-Policy', 'no-referrer-when-downgrade');
-//   next();
-// });
+app.use((req, res, next) => {
+    // Only for local not deploy - not sure if this works tho
+    // res.setHeader('Referrer-Policy', 'no-referrer-when-downgrade');
+    res.header('Access-Control-Allow-Origin', constants['CLIENT_URL']);
+    next();
+});
 
 const port = process.env.PORT || 8082;
 app.listen(port, () => console.log(`Server running on port ${port}`));
