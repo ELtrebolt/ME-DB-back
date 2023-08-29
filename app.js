@@ -47,7 +47,8 @@ app.use(
 cors({
     origin: constants['CLIENT_URL'],    // true
     methods: "GET,POST,PUT,DELETE",
-    credentials: true
+    credentials: true,
+    exposedHeaders: ['Access-Control-Allow-Origin'] 
 }));
 
 // Middleware to parse JSON data
@@ -56,12 +57,12 @@ app.use(express.json());
 // use Routes
 app.use('/api/media', media);
 app.use('/auth', authRoute);
-app.use((req, res, next) => {
-    // Only for local not deploy - not sure if this works tho
-    // res.setHeader('Referrer-Policy', 'no-referrer-when-downgrade');
-    res.header('Access-Control-Allow-Origin', constants['CLIENT_URL']);
-    next();
-});
+// app.use((req, res, next) => {
+//     // Only for local not deploy - not sure if this works tho
+//     // res.setHeader('Referrer-Policy', 'no-referrer-when-downgrade');
+//     res.header('Access-Control-Allow-Origin', constants['CLIENT_URL']);
+//     next();
+// });
 
 const port = process.env.PORT || 8082;
 app.listen(port, () => console.log(`Server running on port ${port}`));
