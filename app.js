@@ -17,6 +17,23 @@ app.set('trust proxy', 1)
 app.use(
     cookieSession({ name: "session", keys: ["lama"], maxAge: 24 * 60 * 60 * 100 })
   );
+// Problem using with passport 0.6.0: session.regenerate is not a function
+// Solution from https://github.com/jaredhanson/passport/issues/904
+// register regenerate & save after the cookieSession middleware initialization
+app.use(function(request, response, next) {
+  if (request.session && !request.session.regenerate) {
+      request.session.regenerate = (cb) => {
+          cb()
+      }
+  }
+  if (request.session && !request.session.save) {
+      request.session.save = (cb) => {
+          cb()
+      }
+  }
+  next()
+})
+
 app.use(passport.initialize());
 app.use(passport.session());
 
