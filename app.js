@@ -51,7 +51,7 @@ app.use(express.json());
 // use Routes
 app.use('/api/media', media);
 app.use('/auth', authRoute);
-// Only for local not deploy
+// Only for local not deploy - not sure if this works tho
 // app.use((req, res, next) => {
 //   res.setHeader('Referrer-Policy', 'no-referrer-when-downgrade');
 //   next();
