@@ -13,7 +13,7 @@ const constants = require('./config/constants');
 const app = express();
 connectDB();
 
-app.set('trust proxy', 1) 
+// app.set('trust proxy', 1) 
 app.use(
     cookieSession({ name: "session", keys: ["lama"], maxAge: 24 * 60 * 60 * 100 })
   );
@@ -42,7 +42,7 @@ app.use(
         credentials: true                   // access-control-allow-credentials
     }));
 
-// Middleware to parse JSON data comes before passport
+// Middleware to parse JSON data comes before passport - for sending POST data
 app.use(express.json());
 
 // this function checks if req.session.passport.user exists
