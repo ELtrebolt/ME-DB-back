@@ -13,6 +13,17 @@ const constants = require('./config/constants');
 const app = express();
 connectDB();
 
+// Setup CORS before defining Routes and Passport Initialization
+app.use(
+    cors({
+        origin: constants['CLIENT_URL'],    // access-control-allow-origin
+        methods: "GET,POST,PUT,DELETE",
+        credentials: true                   // access-control-allow-credentials
+    }));
+
+// Middleware to parse JSON data
+app.use(express.json());
+
 // app.set('trust proxy', 1) 
 app.use(
     cookieSession({ name: "session", keys: ["lama"], maxAge: 24 * 60 * 60 * 100 })
@@ -33,17 +44,6 @@ app.use(function(request, response, next) {
   }
   next()
 })
-
-// Setup CORS before defining Routes and Passport Initialization
-app.use(
-    cors({
-        origin: constants['CLIENT_URL'],    // access-control-allow-origin
-        methods: "GET,POST,PUT,DELETE",
-        credentials: true                   // access-control-allow-credentials
-    }));
-
-// Middleware to parse JSON data comes before passport
-app.use(express.json());
 
 // this function checks if req.session.passport.user exists
 // if it does it will call passport.session()
