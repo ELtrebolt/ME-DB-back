@@ -13,7 +13,7 @@ const constants = require('./config/constants');
 const app = express();
 connectDB();
 
-app.set('trust proxy', 1) 
+// app.set('trust proxy', 1) 
 app.use(
     cookieSession({ name: "session", keys: ["lama"], maxAge: 24 * 60 * 60 * 100 })
   );
@@ -34,6 +34,14 @@ app.use(function(request, response, next) {
   next()
 })
 
+// Setup CORS before defining Routes and Passport Initialization
+app.use(
+    cors({
+        origin: constants['CLIENT_URL'],    // access-control-allow-origin
+        methods: "GET,POST,PUT,DELETE",
+        credentials: true                   // access-control-allow-credentials
+    }));
+
 // this function checks if req.session.passport.user exists
 // if it does it will call passport.session()
 // if it finds a serialized user object in the session,
@@ -41,15 +49,6 @@ app.use(function(request, response, next) {
 // it will retrieve the user and attach it to req.user
 app.use(passport.initialize());
 app.use(passport.session());
-
-// Setup CORS before defining Routes
-app.use(
-cors({
-    origin: constants['CLIENT_URL'],    // true
-    methods: "GET,POST,PUT,DELETE",
-    credentials: true,
-    exposedHeaders: ['Access-Control-Allow-Origin'] 
-}));
 
 // Middleware to parse JSON data
 app.use(express.json());

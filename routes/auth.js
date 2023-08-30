@@ -12,7 +12,8 @@ router.get("/login/failed", (req, res) => {
 })
 
 router.get("/login/success", (req, res) => {
-    console.log("Session:", req.session);
+    // User stored in req.session.passport.user
+    // console.log("Session:", req.session);
     if(req.user)
     {
         res.status(200).json({
