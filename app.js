@@ -13,7 +13,9 @@ const constants = require('./config/constants');
 const app = express();
 connectDB();
 
-// app.set('trust proxy', 1) 
+app.set('trust proxy', 1) 
+
+// Cookie-Session
 app.use(
     cookieSession({ name: "session", keys: ["lama"], maxAge: 24 * 60 * 60 * 100 })
   );
@@ -39,7 +41,8 @@ app.use(
     cors({
         origin: constants['CLIENT_URL'],    // access-control-allow-origin
         methods: "GET,POST,PUT,DELETE",
-        credentials: true                   // access-control-allow-credentials
+        credentials: true,                   // access-control-allow-credentials
+        allowedHeaders:   "Content-Type,Authorization,x-csrf-token,mediatype,todo,userid",    // Access-Control-Allow-Headers
     }));
 
 // Middleware to parse JSON data comes before passport - for sending POST data
@@ -56,12 +59,14 @@ app.use(passport.session());
 // use Routes
 app.use('/api/media', media);
 app.use('/auth', authRoute);
-// app.use((req, res, next) => {
-//     // Only for local not deploy - not sure if this works tho
-//     // res.setHeader('Referrer-Policy', 'no-referrer-when-downgrade');
-//     res.header('Access-Control-Allow-Origin', constants['CLIENT_URL']);
-//     next();
-// });
+// Set Cookies
+app.use((req, res, next) => {
+    res.cookie('yourCookieName', 'cookieValue', {
+      sameSite: false,
+      secure: true      // HTTPS
+    });
+    next();
+  });
 
 const port = process.env.PORT || 8082;
 app.listen(port, () => console.log(`Server running on port ${port}`));

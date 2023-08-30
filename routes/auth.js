@@ -15,15 +15,6 @@ router.get("/login/success", (req, res) => {
     // User stored in req.session.passport.user
     console.log("Authenticated:", req.isAuthenticated());
     console.log("Session:", req.session);
-    if(req.session.passport.user)
-    {
-        res.status(200).json({
-            success: true,
-            message: "Kinda Successful",
-            user: req.session.passport.user,
-            cookies: req.cookies
-        })
-    }
     if(req.user)
     {
         res.status(200).json({
@@ -53,7 +44,7 @@ router.get("/google/callback", passport.authenticate("google", {
 router.get("/logout", (req,res) => {
     req.session = null;
     req.logout(function(err) {
-        if (err) { return next(err); }
+        if (err) { console.log(err); }
         res.redirect(CLIENT_URL);
       });
 })
