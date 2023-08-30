@@ -13,7 +13,7 @@ const constants = require('./config/constants');
 const app = express();
 connectDB();
 
-// app.set('trust proxy', 1) 
+app.set('trust proxy', 1) 
 app.use(
     cookieSession({ name: "session", keys: ["lama"], maxAge: 24 * 60 * 60 * 100 })
   );
@@ -42,6 +42,9 @@ app.use(
         credentials: true                   // access-control-allow-credentials
     }));
 
+// Middleware to parse JSON data comes before passport
+app.use(express.json());
+
 // this function checks if req.session.passport.user exists
 // if it does it will call passport.session()
 // if it finds a serialized user object in the session,
@@ -49,9 +52,6 @@ app.use(
 // it will retrieve the user and attach it to req.user
 app.use(passport.initialize());
 app.use(passport.session());
-
-// Middleware to parse JSON data
-app.use(express.json());
 
 // use Routes
 app.use('/api/media', media);
