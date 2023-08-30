@@ -14,10 +14,19 @@ const app = express();
 connectDB();
 
 app.set('trust proxy', 1) 
+// Setup CORS before Cookie-Session, Routes and Passport Initialization
+app.use(
+    cors({
+        origin: constants['CLIENT_URL'],    // access-control-allow-origin
+        methods: "GET,POST,PUT,DELETE",
+        credentials: true,                   // access-control-allow-credentials
+        allowedHeaders:   "Content-Type,Authorization,x-csrf-token,mediatype,todo,userid",    // Access-Control-Allow-Headers
+    }));
 
 // Cookie-Session
 app.use(
-    cookieSession({ name: "session", keys: ["lama"], maxAge: 24 * 60 * 60 * 100 })
+    cookieSession({ name: "session", keys: ["lama"], maxAge: 24 * 60 * 60 * 100,
+                    sameSite: false, secure: true })
   );
 // Problem using with passport 0.6.0: session.regenerate is not a function
 // Solution from https://github.com/jaredhanson/passport/issues/904
@@ -36,15 +45,6 @@ app.use(function(request, response, next) {
   next()
 })
 
-// Setup CORS before defining Routes and Passport Initialization
-app.use(
-    cors({
-        origin: constants['CLIENT_URL'],    // access-control-allow-origin
-        methods: "GET,POST,PUT,DELETE",
-        credentials: true,                   // access-control-allow-credentials
-        allowedHeaders:   "Content-Type,Authorization,x-csrf-token,mediatype,todo,userid",    // Access-Control-Allow-Headers
-    }));
-
 // Middleware to parse JSON data comes before passport - for sending POST data
 app.use(express.json());
 
@@ -59,14 +59,6 @@ app.use(passport.session());
 // use Routes
 app.use('/api/media', media);
 app.use('/auth', authRoute);
-// Set Cookies
-app.use((req, res, next) => {
-    res.cookie('yourCookieName', 'cookieValue', {
-      sameSite: false,
-      secure: true      // HTTPS
-    });
-    next();
-  });
 
 const port = process.env.PORT || 8082;
 app.listen(port, () => console.log(`Server running on port ${port}`));
