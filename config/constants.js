@@ -6,7 +6,7 @@
 
 // For Deployment
 const json = {
-    'CLIENT_URL': "https://me-db.tech",
+    'CLIENT_URL': "https://www.me-db.tech",
     'SERVER_CALLBACK_URL': "https://me-db.cyclic.cloud/auth/google/callback"
 };
 
