@@ -20,13 +20,13 @@ app.use(
         origin: constants['CLIENT_URL'],    // access-control-allow-origin
         methods: "GET,POST,PUT,DELETE",
         credentials: true,                   // access-control-allow-credentials
-        allowedHeaders:   "Content-Type,Authorization,x-csrf-token,mediatype,todo,userid",    // Access-Control-Allow-Headers
+        allowedHeaders:   "Content-Type,Authorization,mediatype,todo,userid",    // Access-Control-Allow-Headers
     }));
 
 // Cookie-Session
 app.use(
     cookieSession({ name: "session", keys: ["lama"], maxAge: 24 * 60 * 60 * 100,
-                    sameSite: false, secure: true })
+                    sameSite: 'none', secure: true })
   );
 // Problem using with passport 0.6.0: session.regenerate is not a function
 // Solution from https://github.com/jaredhanson/passport/issues/904
