@@ -1,13 +1,17 @@
-// For Local
-// const json = {
-//     'CLIENT_URL': "http://localhost:3000",
-//     'SERVER_CALLBACK_URL': "http://localhost:8082/auth/google/callback"
-// };
+// Only for local not deployment
+// require('dotenv').config();
 
-// For Deployment
-const json = {
-    'CLIENT_URL': "https://www.me-db.tech",
-    'SERVER_CALLBACK_URL': "https://me-db.cyclic.cloud/auth/google/callback"
-};
-
+let json = {}
+if(process.env.STATUS === 'local')
+{
+    json['CLIENT_URL'] = "http://localhost:3000";
+    json['SERVER_CALLBACK_URL'] = "http://localhost:8082/auth/google/callback";
+}
+else if(process.env.STATUS === 'deploy')
+{
+    json = {
+        'CLIENT_URL': "https://www.me-db.tech",
+        'SERVER_CALLBACK_URL': "https://me-db.cyclic.cloud/auth/google/callback"
+    };
+}
 module.exports = json;

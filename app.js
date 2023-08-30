@@ -24,10 +24,20 @@ app.use(
     }));
 
 // Cookie-Session
-app.use(
-    cookieSession({ name: "session", keys: ["lama"], maxAge: 24 * 60 * 60 * 100,
-                    sameSite: 'none', secure: true })
-  );
+if(process.env.STATUS === 'local')
+{
+    app.use(
+        cookieSession({ name: "session", keys: ["lama"], maxAge: 24 * 60 * 60 * 100 })
+      );
+}
+else if(process.env.STATUS === 'deploy')
+{
+    app.use(
+        cookieSession({ name: "session", keys: ["lama"], maxAge: 24 * 60 * 60 * 100,
+                        sameSite: 'none', secure: true })
+      );
+}
+
 // Problem using with passport 0.6.0: session.regenerate is not a function
 // Solution from https://github.com/jaredhanson/passport/issues/904
 // register regenerate & save after the cookieSession middleware initialization
