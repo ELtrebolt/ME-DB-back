@@ -5,18 +5,13 @@ const router = express.Router();
 const Media = require('../../models/Media');
 const User = require('../../models/User');
 
-// @route GET api/media/test
-// @description tests media route
-// @access Public
-router.get('/test', (req, res) => res.send('media route testing!'));
-
 // @route GET api/media
 // @description Get all media
 // @access Public
-router.get('/', (req, res) => {
-  Media.find({ userID: req.headers['userid'], 
-            toDo: req.headers['todo'] === 'true',
-            mediaType: req.headers['mediatype'] })
+router.get('/:mediaType/:group', (req, res) => {
+  Media.find({ userID: req.user.ID, 
+            toDo: req.params.group === 'to-do',
+            mediaType: req.params.mediaType })
     .then(media => res.json(media))
     .catch(err => res.status(404).json({ message: 'No Media found' }));
 });
@@ -25,7 +20,7 @@ router.get('/', (req, res) => {
 // @description Get single media by id
 // @access Public
 router.get('/:mediaType/:ID', (req, res) => {
-  Media.find({ userID: req.headers.userid, mediaType:req.params.mediaType, ID:req.params.ID })
+  Media.find({ userID: req.user.ID, mediaType:req.params.mediaType, ID:req.params.ID })
     .then(media => res.json(media))
     .catch(err => res.status(404).json({ message: 'No Media found' }));
 });
@@ -34,13 +29,13 @@ router.get('/:mediaType/:ID', (req, res) => {
 // @description add/save media
 // @access Public
 router.post('/', (req, res) => {
-  const userID = req.body.userID;
+  const userID = req.user.ID;
   const mediaType = req.body.mediaType
   User.findOne({ ID: userID })
     .then(u => {
 
-      m_id = {'ID':u[mediaType].total+1}
-      Media.create({...req.body, ...m_id})
+      extra = {'userID':userID, 'ID':u[mediaType].total+1}
+      Media.create({...req.body, ...extra})
       .then(media => {
         console.log("Media created:", media.title);
         User.findOneAndUpdate(
@@ -67,7 +62,7 @@ router.post('/', (req, res) => {
 // @access Public
 router.put('/:mediaType/:ID', (req, res) => {
   const query = {
-    userID: req.body.userID,
+    userID: req.user.ID,
     mediaType: req.params.mediaType, 
     ID: req.params.ID, 
   };
@@ -84,7 +79,7 @@ router.put('/:mediaType/:ID', (req, res) => {
 // @access Public
 router.delete('/:mediaType/:ID', (req, res) => {
   const query = {
-    userID: req.headers.userid,
+    userID: req.user.ID,
     mediaType: req.params.mediaType, 
     ID: req.params.ID, 
   };

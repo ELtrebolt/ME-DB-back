@@ -42,10 +42,12 @@ router.get("/google/callback", passport.authenticate("google", {
 
 router.get("/logout", (req,res) => {
     req.session = null;
-    req.logout(function(err) {
-        if (err) { console.log(err); }
-        res.redirect(CLIENT_URL);
-      });
+    res.clearCookie('session');
+    res.redirect(CLIENT_URL);
+    // req.logout(function(err) {
+    //     if (err) { console.log(err); }
+    //     res.redirect(CLIENT_URL);
+    //   });
 })
 
 module.exports = router;
