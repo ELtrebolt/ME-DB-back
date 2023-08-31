@@ -9,20 +9,25 @@ const User = require('../../models/User');
 // @description Get all media
 // @access Public
 router.get('/:mediaType/:group', (req, res) => {
-  Media.find({ userID: req.user.ID, 
-            toDo: req.params.group === 'to-do',
-            mediaType: req.params.mediaType })
+  if(isNaN(req.params.group))
+  {
+    Media.find({ userID: req.user.ID, 
+      toDo: req.params.group === 'to-do',
+      mediaType: req.params.mediaType })
     .then(media => res.json(media))
     .catch(err => res.status(404).json({ message: 'No Media found' }));
-});
-
-// @route GET api/media/:id
-// @description Get single media by id
-// @access Public
-router.get('/:mediaType/:ID', (req, res) => {
-  Media.find({ userID: req.user.ID, mediaType:req.params.mediaType, ID:req.params.ID })
-    .then(media => res.json(media))
-    .catch(err => res.status(404).json({ message: 'No Media found' }));
+  }
+  else
+  {
+    const conditions = {
+      userID: req.user.ID,
+      mediaType:req.params.mediaType,
+      ID:req.params.group
+    };
+    Media.findOne(conditions)
+      .then(media => res.json(media))
+      .catch(err => res.status(404).json({ message: 'No Media found' }));
+  }
 });
 
 // @route GET api/media
