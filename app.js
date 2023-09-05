@@ -8,19 +8,21 @@ const passportSetup = require("./config/passport");  // needed otherwise Unknown
 const passport = require("passport");
 const authRoute = require("./routes/auth");
 const media = require('./routes/api/media');
+const userApi = require('./routes/api/user');
 const constants = require('./config/constants');
 
 const app = express();
 connectDB();
 
-app.set('trust proxy', 1) 
+// This is for making Cross Domain requests (Vercel client & Render server with separate domains)
 // Setup CORS before Cookie-Session, Routes and Passport Initialization
+app.set('trust proxy', 1) 
 app.use(
     cors({
         origin: constants['CLIENT_URL'],    // access-control-allow-origin
         methods: "GET,POST,PUT,DELETE",
         credentials: true,                   // access-control-allow-credentials
-        allowedHeaders:   "Content-Type,Authorization,mediatype,todo,userid",    // Access-Control-Allow-Headers
+        allowedHeaders:   "Content-Type,Authorization,userUpdated",    // Access-Control-Allow-Headers
     }));
 
 // Cookie-Session
@@ -68,6 +70,7 @@ app.use(passport.session());
 
 // use Routes
 app.use('/api/media', media);
+app.use('/api/user', userApi);
 app.use('/auth', authRoute);
 
 const port = process.env.PORT || 8082;

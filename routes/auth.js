@@ -16,12 +16,36 @@ router.get("/login/success", (req, res) => {
     // console.log("Session:", req.session);
     if(req.user)
     {
-        res.status(200).json({
-            success: true,
-            message: "successful",
-            user: req.user,
-            cookies: req.cookies
-        })
+        if(req.headers.userupdated)
+        {
+            console.log("Refreshing User from MongoDB")
+            User.findOne({ ID: req.user.ID })
+                .then(user => {
+                if (user) {
+                    req.user = user;
+                    req.session.save(err => {
+                        if (err) {
+                          console.error('Error refreshing session:', err);
+                        } else {
+                          res.status(200).json({
+                            success: true,
+                            message: "successful",
+                            user: req.user
+                        })
+                        }
+                    });
+                }
+                else {
+                    console.log("User Not Found")
+                }})
+        }
+        else {
+            res.status(200).json({
+                success: true,
+                message: "successful",
+                user: req.user
+            })
+        }
     }
     else
     {

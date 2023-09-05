@@ -1,5 +1,5 @@
 // Only for local not deployment
-// require('dotenv').config();
+require('dotenv').config();
 
 let json = {}
 if(process.env.STATUS === 'local')
@@ -11,8 +11,8 @@ if(process.env.STATUS === 'local')
 else if(process.env.STATUS === 'deploy')
 {
     json = {
-        'CLIENT_URL': "https://me-db-eltrebolt.vercel.app",
-        'SERVER_CALLBACK_URL': "https://me-db.tech/auth/google/callback"
+        'CLIENT_URL': "https://me-db.tech",
+        'SERVER_CALLBACK_URL': "https://api.me-db.tech/auth/google/callback"
     };
 }
 module.exports = json;
