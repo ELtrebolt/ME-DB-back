@@ -11,7 +11,7 @@ if(process.env.STATUS === 'local')
 else if(process.env.STATUS === 'deploy')
 {
     json = {
-        'CLIENT_URL': "https://me-db.tech",
+        'CLIENT_URL': "https://www.me-db.tech",
         'SERVER_CALLBACK_URL': "https://api.me-db.tech/auth/google/callback"
     };
 }
