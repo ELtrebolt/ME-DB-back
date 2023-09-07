@@ -14,19 +14,17 @@ const constants = require('./config/constants');
 const app = express();
 connectDB();
 
-// CORS and Cookies
-if(process.env.STATUS === 'local')
-{
-    // Only if making Cross Domain requests (Localhost 3000 & 8082 or Vercel client & Render server)
-    // Setup CORS before Cookie-Session, Routes and Passport Initialization
-    app.set('trust proxy', 1) 
-    app.use(
-        cors({
-            origin: constants['CLIENT_URL'],    // access-control-allow-origin
-            methods: "GET,POST,PUT,DELETE",
-            credentials: true,                   // access-control-allow-credentials
-            allowedHeaders:   "Content-Type,Authorization",    // Access-Control-Allow-Headers
-        }));
+// For Cross Domain requests (Localhost 3000 & 8082 or Vercel client & Render server or example.com & api.example.com)
+// Setup CORS before Cookie-Session, Routes and Passport Initialization
+app.set('trust proxy', 1) 
+app.use(
+    cors({
+        origin: constants['CLIENT_URL'],    // access-control-allow-origin
+        methods: "GET,POST,PUT,DELETE",
+        credentials: true,                   // access-control-allow-credentials
+        allowedHeaders:   "Content-Type,Authorization",    // Access-Control-Allow-Headers
+    }));
+if(process.env.STATUS === 'local') {
     app.use(
         cookieSession({ name: "session", keys: ["lama"], maxAge: 24 * 60 * 60 * 100 })
       );
