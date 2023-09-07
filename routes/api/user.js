@@ -16,7 +16,8 @@ router.put('/:mediaType/:group/:tier', (req, res) => {
         { $set: { [`${mediaType}.${group}Tiers.${tier}`]: req.body.newTitle } }
       )
       .then(oldUser => {
-        console.log(`Tier Changed:`, oldUser[mediaType][`${group}Tiers`][tier] , "->", req.body.newTitle);
+        req.session.passport.user[mediaType][`${group}Tiers`][tier] = req.body.newTitle
+        console.log(`PUT /api/user/${mediaType}/${group}/${tier}:`, oldUser[mediaType][`${group}Tiers`][tier] , "->", req.body.newTitle);
         res.json({ msg: 'User Tier changed successfully!' })
       })
       .catch(error => {

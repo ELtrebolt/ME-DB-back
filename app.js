@@ -14,20 +14,19 @@ const constants = require('./config/constants');
 const app = express();
 connectDB();
 
-// This is for making Cross Domain requests (Vercel client & Render server with separate domains)
-// Setup CORS before Cookie-Session, Routes and Passport Initialization
-app.set('trust proxy', 1) 
-app.use(
-    cors({
-        origin: constants['CLIENT_URL'],    // access-control-allow-origin
-        methods: "GET,POST,PUT,DELETE",
-        credentials: true,                   // access-control-allow-credentials
-        allowedHeaders:   "Content-Type,Authorization,userUpdated",    // Access-Control-Allow-Headers
-    }));
-
-// Cookie-Session
+// CORS and Cookies
 if(process.env.STATUS === 'local')
 {
+    // Only if making Cross Domain requests (Localhost 3000 & 8082 or Vercel client & Render server)
+    // Setup CORS before Cookie-Session, Routes and Passport Initialization
+    app.set('trust proxy', 1) 
+    app.use(
+        cors({
+            origin: constants['CLIENT_URL'],    // access-control-allow-origin
+            methods: "GET,POST,PUT,DELETE",
+            credentials: true,                   // access-control-allow-credentials
+            allowedHeaders:   "Content-Type,Authorization",    // Access-Control-Allow-Headers
+        }));
     app.use(
         cookieSession({ name: "session", keys: ["lama"], maxAge: 24 * 60 * 60 * 100 })
       );
