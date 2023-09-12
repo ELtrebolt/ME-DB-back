@@ -30,12 +30,13 @@ router.get('/:mediaType/:group', (req, res) => {
   }
 });
 
-// @route GET api/media
+// @route POST api/media
 // @description add/save media
 // @access Public
 router.post('/', (req, res) => {
   const userID = req.user.ID;
   const mediaType = req.body.mediaType
+  req.body.tags = req.body.tags.map((item) => item.toLowerCase().replace(/ /g, '-'));
   User.findOne({ ID: userID })
     .then(u => {
 
@@ -71,7 +72,7 @@ router.put('/:mediaType/:ID', (req, res) => {
     mediaType: req.params.mediaType, 
     ID: req.params.ID, 
   };
-
+  req.body.tags = req.body.tags.map((item) => item.toLowerCase().replace(/ /g, '-'));
   Media.findOneAndUpdate(query, req.body)
     .then(media => res.json({ msg: 'Updated successfully' }))
     .catch(err =>
@@ -89,9 +90,29 @@ router.delete('/:mediaType/:ID', (req, res) => {
     ID: req.params.ID, 
   };
 
+  User.findOne({ ID: req.user.ID })
+    .then(u => {
+      if(u[req.params.mediaType].total == req.params.ID) {
+        User.findOneAndUpdate(
+          { ID: req.user.ID }, 
+          { $inc: { [`${req.params.mediaType}.total`]: -1 } }, 
+          { new: true } // Return the updated user document
+        )
+        .then(updatedUser => {
+          console.log(`${req.params.mediaType} Count updated:`, updatedUser[req.params.mediaType].total);
+        })
+        .catch((err) => {
+          console.log('Error updating count in DELETE api/media');
+        });
+      }
+    })
+    .catch((err) => {
+      console.log('Error finding user in DELETE api/media');
+    });
+
   Media.findOneAndRemove(query)
-    .then(media => res.json({ mgs: 'Media entry deleted successfully' }))
-    .catch(err => res.status(404).json({ error: 'No such a media' }));
+  .then(media => res.json({ mgs: 'Media entry deleted successfully', toDo: media.toDo }))
+  .catch(err => res.status(404).json({ error: 'No such a media' }));
 });
 
 module.exports = router;

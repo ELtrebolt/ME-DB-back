@@ -25,11 +25,12 @@ const MediaSchema = new mongoose.Schema({
     type: Boolean,
     required: true
   },
-
   year: {
     type: Number
   },
-  customAttributes: mongoose.Schema.Types.Mixed
+  tags: {
+    type: Array
+  }
 });
 
 module.exports = Media = mongoose.model('Media', MediaSchema);
