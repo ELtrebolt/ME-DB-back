@@ -7,7 +7,6 @@ const User = require('../../models/User');
 // @description Update media
 // @access Public
 router.put('/:mediaType/:group/:tier', (req, res) => {
-    // group = 'todo' ? (req.params.group == 'to-do') : 'collection'
     const mediaType = req.params.mediaType
     const group = req.params.group
     const tier = req.params.tier

@@ -36,7 +36,9 @@ router.get('/:mediaType/:group', (req, res) => {
 router.post('/', (req, res) => {
   const userID = req.user.ID;
   const mediaType = req.body.mediaType
-  req.body.tags = req.body.tags.map((item) => item.toLowerCase().replace(/ /g, '-'));
+  if(req.body.tags && req.body.tags[0]) {
+    req.body.tags = req.body.tags.map((item) => item.toLowerCase().replace(/ /g, '-'));
+  }
   User.findOne({ ID: userID })
     .then(u => {
 
