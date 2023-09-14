@@ -9,13 +9,37 @@ const User = require('../../models/User');
 // @description Get all media
 // @access Public
 router.get('/:mediaType/:group', (req, res) => {
+  // if group is collection or to-do or tags
   if(isNaN(req.params.group))
   {
-    Media.find({ userID: req.user.ID, 
-      toDo: req.params.group === 'to-do',
-      mediaType: req.params.mediaType })
-    .then(media => res.json(media))
-    .catch(err => res.status(404).json({ message: 'No Media found' }));
+    var tags = []
+    Media.aggregate([
+      { $match: { mediaType: req.params.mediaType } },
+      
+      // Unwind the tags array to create a separate document for each tag
+      { $unwind: '$tags' },
+    
+      // Group the documents by the tags to make them unique
+      { $group: { _id: '$tags' } },
+    
+      // Project the results to include only the tag field
+      { $project: { _id: 0, tag: '$_id' } }
+    ])
+    .then(result => {
+      tags = result.map(entry => entry.tag);
+      if(req.params.group === 'tags') {
+        res.json({'uniqueTags': tags});
+      } else {
+        Media.find({ userID: req.user.ID, 
+          toDo: req.params.group === 'to-do',
+          mediaType: req.params.mediaType })
+        .then(media => res.json({'media': media, 'uniqueTags': tags}))
+        .catch(err => res.status(404).json({ message: 'No Media found' }));
+      }
+    })
+    .catch(error => {
+      console.error(error);
+    });
   }
   else
   {
