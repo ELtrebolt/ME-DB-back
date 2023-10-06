@@ -9,12 +9,12 @@ const User = require('../../models/User');
 // @description Get all media
 // @access Public
 router.get('/:mediaType/:group', (req, res) => {
-  // if group is collection or to-do or tags
+  // if group is NotaNumber = collection or to-do or tags
   if(isNaN(req.params.group))
   {
     var tags = []
     Media.aggregate([
-      { $match: { mediaType: req.params.mediaType } },
+      { $match: { mediaType: req.params.mediaType, userID: req.user.ID } },
       
       // Unwind the tags array to create a separate document for each tag
       { $unwind: '$tags' },
