@@ -58,9 +58,10 @@ router.put('/newTypes', (req, res) => {
         { new: true }
       )
       .then(updatedUser => {
-        console.log('updatedUser.newTypes', [...updatedUser.newTypes.keys()])
-        req.session.passport.user.newTypes[`${newType}`] = newTypeFields
-        res.json({ msg: 'New Type Created successfully!' })
+        const newTypes = [...updatedUser.newTypes.keys()]
+        console.log('Created New Type', newType)
+        req.session.passport.user.newTypes = updatedUser.newTypes
+        res.json({ msg: 'New Type Created successfully!', newTypes:newTypes })
       })
       .catch(error => {
         console.log(error)

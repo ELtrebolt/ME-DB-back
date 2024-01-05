@@ -34,7 +34,7 @@ router.get('/:mediaType/:group', (req, res) => {
           toDo: req.params.group === 'to-do',
           mediaType: req.params.mediaType })
         .then(media => res.json({'media': media, 'uniqueTags': tags}))
-        .catch(err => res.status(404).json({ message: 'No Media found' }));
+        .catch(err => res.status(404).json({ msg: 'No Media found' }));
       }
     })
     .catch(error => {
@@ -50,7 +50,7 @@ router.get('/:mediaType/:group', (req, res) => {
     };
     Media.findOne(conditions)
       .then(media => res.json(media))
-      .catch(err => res.status(404).json({ message: 'No Media found' }));
+      .catch(err => res.status(404).json({ msg: 'No Media found' }));
   }
 });
 
@@ -146,8 +146,41 @@ router.delete('/:mediaType/:ID', (req, res) => {
     });
 
   Media.findOneAndRemove(query)
-  .then(media => res.json({ mgs: 'Media entry deleted successfully', toDo: media.toDo }))
+  .then(media => res.json({ msg: 'Media entry deleted successfully', toDo: media.toDo }))
   .catch(err => res.status(404).json({ error: 'No such a media' }));
 });
+
+router.delete('/:mediaType', (req, res) => {
+  const mediaType = req.params.mediaType
+  const query = {
+    userID: req.user.ID,
+    mediaType: mediaType
+  };
+  var deletedCount = 0;
+
+  Media.deleteMany(query)
+  .then(result => {
+    deletedCount = result.deletedCount
+    console.log(`All ${mediaType} records deleted: ${deletedCount}`);
+    User.findOneAndUpdate(
+      { ID: req.user.ID }, 
+      { $unset: { [`newTypes.${mediaType}`]: 1 } },
+      { new: true }
+    )
+    .then(updatedUser => {
+      req.session.passport.user.newTypes = updatedUser.newTypes
+      const msg = `User.newTypes.${mediaType} deleted`
+      console.log(msg);
+      res.json({ msg: msg});
+    })
+    .catch(error => {
+      console.error('Error deleting user.newTypes:', error);
+    });
+  })
+  .catch(error => {
+    console.error(`Error deleting all ${mediaType} Media:`, error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  });
+})
 
 module.exports = router;
