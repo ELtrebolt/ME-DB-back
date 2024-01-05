@@ -59,34 +59,43 @@ router.get('/:mediaType/:group', (req, res) => {
 // @access Public
 router.post('/', (req, res) => {
   const userID = req.user.ID;
-  const mediaType = req.body.mediaType
-  if(req.body.tags && req.body.tags[0]) {
-    req.body.tags = req.body.tags.map((item) => item.toLowerCase().replace(/ /g, '-'));
+  const media = req.body.media
+  const mediaType = media.mediaType
+  const newType = req.body.newType
+  const mediaTypeLoc2 = newType ? 'newTypes.' : ''
+  if(media.tags && media.tags[0]) {
+    media.tags = media.tags.map((item) => item.toLowerCase().replace(/ /g, '-'));
   }
   User.findOne({ ID: userID })
     .then(u => {
-
-      extra = {'userID':userID, 'ID':u[mediaType].total+1}
-      Media.create({...req.body, ...extra})
+      const total = newType ? u.newTypes.get(mediaType).total+1 : u[mediaType].total+1
+      extra = {'userID':userID, 'ID':total}
+      Media.create({...media, ...extra})
       .then(media => {
         console.log("Media created:", media.title);
         User.findOneAndUpdate(
           { ID: userID }, 
-          { $inc: { [`${mediaType}.total`]: 1 } }, 
+          { $inc: { [`${mediaTypeLoc2}${mediaType}.total`]: 1 } }, 
           { new: true } // Return the updated user document
         )
         .then(updatedUser => {
-          console.log(`${mediaType} Count updated:`, updatedUser[mediaType].total);
+          // change req.user.total?
+          const updatedMediaTypeLoc = newType ? updatedUser.newTypes.get(mediaType) : updatedUser[mediaType]
+          console.log(`${mediaType} Count updated:`, updatedMediaTypeLoc.total);
           res.json({ msg: 'Media added successfully!' })
         })
         .catch(error => {
+          console.log(error);
           res.status(400).json({ error: 'Unable to Update User Count' })
         })
 
       })
       .catch(err => res.status(400).json({ error: err }))
   })
-  .catch(err => res.status(400).json({ error: err }));
+  .catch(err => {
+    console.log('1st Layer', err)
+    res.status(400).json({ error: err })
+  });
 });
 
 // @route PUT api/media/:id

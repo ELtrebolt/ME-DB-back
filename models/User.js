@@ -13,6 +13,10 @@ const UserSchema = new mongoose.Schema({
   profilePic: {
     type: String
   },
+  newTypes: {
+    type: Map,
+    of: mongoose.Schema.Types.Mixed
+  },
 
   movies: {
     total: Number,
