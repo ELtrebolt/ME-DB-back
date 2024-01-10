@@ -22,6 +22,7 @@ passport.use(new GoogleStrategy({
           displayName: profile.displayName,
           // email: profile.emails[0].value,
           profilePic: profile.photos[0].value,
+          newTypes: new Map(),
           anime: {
             total: 0,
             collectionTiers: {
