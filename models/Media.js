@@ -30,6 +30,9 @@ const MediaSchema = new mongoose.Schema({
   },
   tags: {
     type: Array
+  },
+  description: {
+    type: String
   }
 });
 
