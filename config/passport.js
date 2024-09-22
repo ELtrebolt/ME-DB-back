@@ -105,17 +105,19 @@ passport.use(new GoogleStrategy({
       }
     })
     .catch(err => {
-      return done(err);
+      return done(err, false);
     });  
   }
 ));
 
-// determines which data of the user object should be stored in the session and deserializeUser
+// Serialize user to store in session
 passport.serializeUser((user, done) => {
-    done(null, user);
+  done(null, user.id); // Storing user ID in the session
 });
-  
-// The first argument corresponds to the key of the user object that was given to the done function
-passport.deserializeUser((user, done) => {
-    done(null, user);
+
+// Deserialize user from session
+passport.deserializeUser((id, done) => {
+  User.findById(id)
+    .then((user) => done(null, user))
+    .catch((err) => done(err, null));
 });
