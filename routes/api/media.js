@@ -145,9 +145,17 @@ router.delete('/:mediaType/:ID', (req, res) => {
       console.log('Error finding user in DELETE api/media');
     });
 
-  Media.findOneAndRemove(query)
-  .then(media => res.json({ msg: 'Media entry deleted successfully', toDo: media.toDo }))
-  .catch(err => res.status(404).json({ error: 'No such a media' }));
+  Media.findOneAndDelete(query)
+  .then(media => {
+    if (!media) {
+      return res.status(404).json({ error: 'No such a media' });
+    }
+    res.json({ msg: 'Media entry deleted successfully', toDo: media.toDo });
+  })
+  .catch(err => {
+    console.log('Error deleting media:', err);
+    res.status(500).json({ error: 'Error deleting media' });
+  });
 });
 
 router.delete('/:mediaType', (req, res) => {
