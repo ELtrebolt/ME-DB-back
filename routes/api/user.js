@@ -3,6 +3,20 @@ const router = express.Router();
 
 const User = require('../../models/User');
 
+// Authentication middleware
+const requireAuth = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ 
+      success: false, 
+      message: "Authentication required" 
+    });
+  }
+  next();
+};
+
+// Apply authentication middleware to all routes
+router.use(requireAuth);
+
 // @route PUT api/user/mediaType/group/tier
 // @description Update TierTitle name
 router.put('/:mediaType/:group/:tier', (req, res) => {

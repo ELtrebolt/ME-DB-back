@@ -26,13 +26,13 @@ app.use(
     }));
 if(process.env.STATUS === 'local') {
     app.use(
-        cookieSession({ name: "session", keys: ["lama"], maxAge: 24 * 60 * 60 * 100 })
+        cookieSession({ name: "session", keys: ["lama"], maxAge: 7 * 24 * 60 * 60 * 1000 })
       );
 }
 else if(process.env.STATUS === 'deploy')
 {
     app.use(
-        cookieSession({ name: "session", keys: ["lama"], maxAge: 24 * 60 * 60 * 100,
+        cookieSession({ name: "session", keys: ["lama"], maxAge: 7 * 24 * 60 * 60 * 1000,
                         secure: true })
       );
 }

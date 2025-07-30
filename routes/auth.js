@@ -16,6 +16,8 @@ router.get("/login/success", (req, res) => {
     // console.log("Session:", req.session);
     if(req.user)
     {
+        // Extend session by updating the session
+        req.session.touch();
         res.status(200).json({
             success: true,
             message: "successful",
