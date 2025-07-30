@@ -4,6 +4,15 @@ const constants = require('../config/constants');
 
 const CLIENT_URL = constants['CLIENT_URL']
 
+// Health check endpoint
+router.get("/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Auth service is running",
+    timestamp: new Date().toISOString()
+  });
+});
+
 router.get("/login/failed", (req, res) => {
     res.status(401).json({
         success: false,
@@ -12,24 +21,37 @@ router.get("/login/failed", (req, res) => {
 })
 
 router.get("/login/success", (req, res) => {
-    // User stored in req.session.passport.user, req.isAuthenticated();
-    // console.log("Session:", req.session);
-    if(req.user)
-    {
-        // Extend session by updating the session
-        req.session.touch();
-        res.status(200).json({
-            success: true,
-            message: "successful",
-            user: req.user
-        })
-    }
-    else
-    {
-        res.status(200).json({
+    try {
+        // User stored in req.session.passport.user, req.isAuthenticated();
+        console.log("Session:", req.session);
+        console.log("User:", req.user);
+        
+        if(req.user)
+        {
+            // Extend session by updating the session (safely)
+            if (req.session && typeof req.session.touch === 'function') {
+                req.session.touch();
+            }
+            res.status(200).json({
+                success: true,
+                message: "successful",
+                user: req.user
+            })
+        }
+        else
+        {
+            res.status(200).json({
+                success: false,
+                message: "failure",
+                user: null,
+            })
+        }
+    } catch (error) {
+        console.error("Error in /login/success:", error);
+        res.status(500).json({
             success: false,
-            message: "failure",
-            user: null,
+            message: "Internal server error",
+            error: error.message
         })
     }
 })

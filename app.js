@@ -26,14 +26,24 @@ app.use(
     }));
 if(process.env.STATUS === 'local') {
     app.use(
-        cookieSession({ name: "session", keys: ["lama"], maxAge: 7 * 24 * 60 * 60 * 1000 })
+        cookieSession({ 
+            name: "session", 
+            keys: ["lama"], 
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            sameSite: 'lax'
+        })
       );
 }
 else if(process.env.STATUS === 'deploy')
 {
     app.use(
-        cookieSession({ name: "session", keys: ["lama"], maxAge: 7 * 24 * 60 * 60 * 1000,
-                        secure: true })
+        cookieSession({ 
+            name: "session", 
+            keys: ["lama"], 
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            secure: true,
+            sameSite: 'none'
+        })
       );
 }
 
@@ -65,10 +75,25 @@ app.use(express.json());
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Test endpoint
+app.get('/test', (req, res) => {
+  res.json({ message: 'Server is running correctly' });
+});
+
 // use Routes
 app.use('/api/media', media);
 app.use('/api/user', userApi);
 app.use('/auth', authRoute);
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Global error handler:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  });
+});
 
 const port = process.env.PORT || 8082;
 app.listen(port, () => console.log(`Server running on port ${port}`));

@@ -5,11 +5,13 @@ const connectDB = async () => {
     mongoose.set('strictQuery', true);
     await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
+      useUnifiedTopology: true,
     });
 
     console.log('MongoDB is Connected...');
   } catch (err) {
-    console.error(err.message);
+    console.error('Database connection error:', err.message);
+    console.error('Full error:', err);
     process.exit(1);
   }
 };

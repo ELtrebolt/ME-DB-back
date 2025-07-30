@@ -117,7 +117,18 @@ passport.serializeUser((user, done) => {
 
 // Deserialize user from session
 passport.deserializeUser((id, done) => {
-  User.findById(id)
-    .then((user) => done(null, user))
-    .catch((err) => done(err, null));
+  try {
+    User.findById(id)
+      .then((user) => {
+        console.log("Deserialized user:", user ? user.displayName : "null");
+        done(null, user);
+      })
+      .catch((err) => {
+        console.error("Error deserializing user:", err);
+        done(err, null);
+      });
+  } catch (error) {
+    console.error("Error in deserializeUser:", error);
+    done(error, null);
+  }
 });
