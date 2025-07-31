@@ -205,4 +205,50 @@ router.delete('/:mediaType', (req, res) => {
   });
 })
 
+// @route GET api/media/export
+// @description Export all media for user as CSV
+// @access Private
+router.get('/export', async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    
+    // Get all media for the user
+    const allMedia = await Media.find({ userID }).sort({ mediaType: 1, title: 1 });
+    
+    if (allMedia.length === 0) {
+      return res.json({
+        success: true,
+        csv: 'Media Type,Title,Tier,To-Do,Year,Tags,Description\n'
+      });
+    }
+    
+    // Create CSV header
+    let csvContent = 'Media Type,Title,Tier,To-Do,Year,Tags,Description\n';
+    
+    // Add data rows
+    allMedia.forEach(media => {
+      const title = media.title ? `"${media.title.replace(/"/g, '""')}"` : '';
+      const tier = media.tier || '';
+      const toDo = media.toDo ? 'Yes' : 'No';
+      const year = media.year || '';
+      const tags = media.tags && media.tags.length > 0 ? `"${media.tags.join(', ')}"` : '';
+      const description = media.description ? `"${media.description.replace(/"/g, '""')}"` : '';
+      
+      csvContent += `${media.mediaType},${title},${tier},${toDo},${year},${tags},${description}\n`;
+    });
+    
+    res.json({
+      success: true,
+      csv: csvContent
+    });
+    
+  } catch (error) {
+    console.error('Error exporting data:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error exporting data' 
+    });
+  }
+});
+
 module.exports = router;
