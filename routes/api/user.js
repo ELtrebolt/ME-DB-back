@@ -26,16 +26,25 @@ router.put('/:mediaType/:group/:tier', (req, res) => {
     const mediaTypeLoc = req.body.newType ? 'newTypes.' : ''
     User.findOneAndUpdate(
         { ID: req.user.ID }, 
-        { $set: { [`${mediaTypeLoc}${mediaType}.${group}Tiers.${tier}`]: req.body.newTitle } }
+        { $set: { [`${mediaTypeLoc}${mediaType}.${group}Tiers.${tier}`]: req.body.newTitle } },
+        { new: true }
       )
-      .then(oldUser => {
+      .then(updatedUser => {
         console.log(`PUT /api/user/${mediaType}/${group}/${tier}:`);
         if (req.body.newType){
-          req.session.passport.user.newTypes[mediaType][`${group}Tiers`][tier] = req.body.newTitle
-          console.log(oldUser.newTypes.get(mediaType)[`${group}Tiers`][tier] , "->", req.body.newTitle)
+          // Normalize Map -> plain object in session for safe access
+          const newTypesObj = Object.fromEntries(updatedUser.newTypes);
+          req.session.passport.user.newTypes = newTypesObj;
+          console.log('Updated newTypes tier title');
         } else {
-          req.session.passport.user[mediaType][`${group}Tiers`][tier] = req.body.newTitle
-          console.log(oldUser[mediaType][`${group}Tiers`][tier] , "->", req.body.newTitle)
+          if (!req.session.passport.user[mediaType]) {
+            req.session.passport.user[mediaType] = {};
+          }
+          if (!req.session.passport.user[mediaType][`${group}Tiers`]) {
+            req.session.passport.user[mediaType][`${group}Tiers`] = {};
+          }
+          req.session.passport.user[mediaType][`${group}Tiers`][tier] = req.body.newTitle;
+          console.log('Updated default type tier title');
         }
         res.json({ msg: 'User Tier changed successfully!' })
       })
