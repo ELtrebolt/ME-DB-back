@@ -47,7 +47,19 @@ router.get('/:mediaType/:group', (req, res) => {
         Media.find({ userID: req.user.ID, 
           toDo: req.params.group === 'to-do',
           mediaType: req.params.mediaType })
-        .then(media => res.json({'media': media, 'uniqueTags': tags}))
+        .then(media => {
+          // Sort by tier then orderIndex asc (fallback to title)
+          const ordered = media.sort((a, b) => {
+            if (a.tier !== b.tier) return a.tier.localeCompare(b.tier);
+            const ai = (typeof a.orderIndex === 'number') ? a.orderIndex : Number.MAX_SAFE_INTEGER;
+            const bi = (typeof b.orderIndex === 'number') ? b.orderIndex : Number.MAX_SAFE_INTEGER;
+            if (ai !== bi) return ai - bi;
+            const at = a.title || '';
+            const bt = b.title || '';
+            return at.localeCompare(bt);
+          });
+          res.json({'media': ordered, 'uniqueTags': tags});
+        })
         .catch(err => res.status(404).json({ msg: 'No Media found' }));
       }
     })
@@ -84,7 +96,13 @@ router.post('/', (req, res) => {
     .then(u => {
       const total = newType ? u.newTypes.get(mediaType).total+1 : u[mediaType].total+1
       extra = {'userID':userID, 'ID':total}
-      Media.create({...media, ...extra})
+      // place new record at end of its tier within the same group
+      const placementQuery = { userID, mediaType, toDo: media.toDo, tier: media.tier };
+      Media.find(placementQuery).sort({ orderIndex: -1 }).limit(1)
+        .then(([last]) => {
+          const nextOrder = last && typeof last.orderIndex === 'number' ? last.orderIndex + 1 : 0;
+          return Media.create({ ...media, ...extra, orderIndex: nextOrder });
+        })
       .then(media => {
         console.log("Media created:", media.title);
         User.findOneAndUpdate(
@@ -121,12 +139,40 @@ router.put('/:mediaType/:ID', (req, res) => {
     mediaType: req.params.mediaType, 
     ID: req.params.ID, 
   };
-  req.body.tags = req.body.tags.map((item) => item.toLowerCase().replace(/ /g, '-'));
+  if (Array.isArray(req.body.tags)) {
+    req.body.tags = req.body.tags.map((item) => item.toLowerCase().replace(/ /g, '-'));
+  }
   Media.findOneAndUpdate(query, req.body)
     .then(media => res.json({ msg: 'Updated successfully' }))
     .catch(err =>
       res.status(400).json({ error: 'Unable to update the Database' })
     );
+});
+
+// @route PUT api/media/:mediaType/:group/:tier/reorder
+// @description Persist order within a tier by orderedIds
+router.put('/:mediaType/:group/:tier/reorder', async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    const mediaType = req.params.mediaType;
+    const group = req.params.group; // 'to-do' or 'collection'
+    const tier = req.params.tier;
+    const toDo = group === 'to-do';
+    const orderedIds = Array.isArray(req.body.orderedIds) ? req.body.orderedIds : [];
+    if (!orderedIds.length) return res.json({ msg: 'No changes' });
+
+    const bulkOps = orderedIds.map((id, index) => ({
+      updateOne: {
+        filter: { userID, mediaType, toDo, tier, ID: id },
+        update: { $set: { orderIndex: index } }
+      }
+    }));
+    await Media.bulkWrite(bulkOps);
+    res.json({ msg: 'Reordered successfully' });
+  } catch (err) {
+    console.error('Error reordering:', err);
+    res.status(500).json({ error: 'Unable to reorder' });
+  }
 });
 
 // @route GET api/media/:id

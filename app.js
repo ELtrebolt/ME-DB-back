@@ -20,12 +20,12 @@ connectDB();
 app.set('trust proxy', 1) 
 app.use(
     cors({
-        origin: constants['CLIENT_URL'],    // access-control-allow-origin
+        origin: constants['CLIENT_URL'] || 'http://localhost:3000',    // access-control-allow-origin
         methods: "GET,POST,PUT,DELETE",
         credentials: true,                   // access-control-allow-credentials
         allowedHeaders:   "Content-Type,Authorization",    // Access-Control-Allow-Headers
     }));
-if(process.env.STATUS === 'local') {
+if(process.env.STATUS === 'local' || !process.env.STATUS) {
     app.use(
         cookieSession({ 
             name: "session", 

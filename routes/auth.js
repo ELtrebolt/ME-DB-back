@@ -2,7 +2,7 @@ const router = require("express").Router();
 const passport = require("passport");
 const constants = require('../config/constants');
 
-const CLIENT_URL = constants['CLIENT_URL']
+const CLIENT_URL = constants['CLIENT_URL'] || 'http://localhost:3000'
 
 // Health check endpoint
 router.get("/health", (req, res) => {
@@ -58,10 +58,20 @@ router.get("/login/success", (req, res) => {
 
 router.get("/google", passport.authenticate("google", {scope:["profile"]}));
 
-router.get("/google/callback", passport.authenticate("google", {
+router.get(
+  "/google/callback",
+  (req, res, next) => {
+    // Explicitly allow proxy headers for production behind reverse proxy
+    if (req.headers['x-forwarded-proto'] && req.headers['x-forwarded-proto'] !== 'https') {
+      // continue; do not block
+    }
+    next();
+  },
+  passport.authenticate("google", {
     successRedirect: CLIENT_URL + '/home',
     failureRedirect: '/login/failed'
-}))
+  })
+)
 
 router.get("/logout", (req,res) => {
     req.session = null;

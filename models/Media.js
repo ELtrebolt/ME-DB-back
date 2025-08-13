@@ -21,6 +21,10 @@ const MediaSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  orderIndex: {
+    type: Number,
+    default: 0
+  },
   toDo: {
     type: Boolean,
     required: true
