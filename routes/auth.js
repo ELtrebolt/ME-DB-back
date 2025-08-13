@@ -56,7 +56,12 @@ router.get("/login/success", (req, res) => {
     }
 })
 
-router.get("/google", passport.authenticate("google", {scope:["profile"]}));
+router.get("/google", (req, res, next) => {
+  const prompt = req.query.prompt;
+  const options = { scope: ["profile"] };
+  if (prompt) options.prompt = prompt;
+  return passport.authenticate("google", options)(req, res, next);
+});
 
 router.get(
   "/google/callback",
