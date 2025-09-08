@@ -65,6 +65,7 @@ router.get('/:mediaType/:group', (req, res) => {
     })
     .catch(error => {
       console.error(error);
+      res.status(500).json({ error: 'Server error' });
     });
   }
   else
