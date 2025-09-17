@@ -140,14 +140,23 @@ router.put('/:mediaType/:ID', (req, res) => {
     mediaType: req.params.mediaType, 
     ID: req.params.ID, 
   };
+  
+  console.log("PUT /api/media/:mediaType/:ID - Query:", query);
+  console.log("PUT /api/media/:mediaType/:ID - Request body:", req.body);
+  
   if (Array.isArray(req.body.tags)) {
     req.body.tags = req.body.tags.map((item) => item.toLowerCase().replace(/ /g, '-'));
   }
-  Media.findOneAndUpdate(query, req.body)
-    .then(media => res.json({ msg: 'Updated successfully' }))
-    .catch(err =>
-      res.status(400).json({ error: 'Unable to update the Database' })
-    );
+  
+  Media.findOneAndUpdate(query, req.body, { new: true })
+    .then(media => {
+      console.log("PUT /api/media/:mediaType/:ID - Updated media:", media);
+      res.json({ msg: 'Updated successfully', media: media });
+    })
+    .catch(err => {
+      console.log("PUT /api/media/:mediaType/:ID - Error:", err);
+      res.status(400).json({ error: 'Unable to update the Database' });
+    });
 });
 
 // @route PUT api/media/:mediaType/:group/:tier/reorder
