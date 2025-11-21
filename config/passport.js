@@ -120,7 +120,6 @@ passport.deserializeUser((id, done) => {
   try {
     User.findById(id)
       .then((user) => {
-        console.log("Deserialized user:", user ? user.displayName : "null");
         done(null, user);
       })
       .catch((err) => {

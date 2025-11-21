@@ -1,7 +1,7 @@
 // Imports
 const connectDB = require('./config/db');
 
-const cookieSession = require("cookie-session");
+const session = require("express-session");
 const express = require("express");
 const cors = require("cors");
 const passportSetup = require("./config/passport");  // needed otherwise Unknown authentication strategy "google"
@@ -27,43 +27,38 @@ app.use(
     }));
 if(process.env.STATUS === 'local' || !process.env.STATUS) {
     app.use(
-        cookieSession({ 
-            name: "session", 
-            keys: ["lama"], 
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-            sameSite: 'lax'
+        session({ 
+            name: "session",  // Keep same cookie name as before
+            secret: "lama", 
+            resave: false,
+            saveUninitialized: false,
+            cookie: {
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+                sameSite: 'lax'
+            }
         })
-      );
+    );
 }
 else if(process.env.STATUS === 'deploy')
 {
     app.use(
-        cookieSession({ 
-            name: "session", 
-            keys: ["lama"], 
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-            secure: true,
-            sameSite: 'none'
+        session({ 
+            name: "session",  // Keep same cookie name as before
+            secret: "lama",
+            resave: false,
+            saveUninitialized: false,
+            cookie: {
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+                secure: true,
+                sameSite: 'none',
+                httpOnly: true
+            }
         })
-      );
+    );
 }
 
-// Problem using with passport 0.6.0: session.regenerate is not a function
-// Solution from https://github.com/jaredhanson/passport/issues/904
-// register regenerate & save after the cookieSession middleware initialization
-app.use(function(request, response, next) {
-  if (request.session && !request.session.regenerate) {
-      request.session.regenerate = (cb) => {
-          cb()
-      }
-  }
-  if (request.session && !request.session.save) {
-      request.session.save = (cb) => {
-          cb()
-      }
-  }
-  next()
-})
+// express-session provides regenerate() and save() methods natively
+// No need for workarounds like we had with cookie-session
 
 // Middleware to parse JSON data comes before passport - for sending POST data
 app.use(express.json());
