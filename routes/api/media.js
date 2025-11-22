@@ -141,8 +141,6 @@ router.put('/:mediaType/:ID', (req, res) => {
     ID: req.params.ID, 
   };
   
-  console.log("PUT /api/media/:mediaType/:ID - Query:", query);
-  console.log("PUT /api/media/:mediaType/:ID - Request body:", req.body);
   
   if (Array.isArray(req.body.tags)) {
     req.body.tags = req.body.tags.map((item) => item.toLowerCase().replace(/ /g, '-'));
@@ -150,11 +148,16 @@ router.put('/:mediaType/:ID', (req, res) => {
   
   Media.findOneAndUpdate(query, req.body, { new: true })
     .then(media => {
-      console.log("PUT /api/media/:mediaType/:ID - Updated media:", media);
+      // Log tier changes concisely
+      if (req.body.tier) {
+        console.log(`Tier updated: "${media.title}" → ${req.body.tier}`);
+      } else {
+        console.log(`Media updated: "${media.title}"`);
+      }
       res.json({ msg: 'Updated successfully', media: media });
     })
     .catch(err => {
-      console.log("PUT /api/media/:mediaType/:ID - Error:", err);
+      console.error("Error updating media:", err);
       res.status(400).json({ error: 'Unable to update the Database' });
     });
 });
@@ -220,6 +223,7 @@ router.delete('/:mediaType/:ID', (req, res) => {
     if (!media) {
       return res.status(404).json({ error: 'No such a media' });
     }
+    console.log("Media deleted:", media.title);
     res.json({ msg: 'Media entry deleted successfully', toDo: media.toDo });
   })
   .catch(err => {

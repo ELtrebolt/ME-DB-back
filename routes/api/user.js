@@ -25,54 +25,36 @@ router.put('/:mediaType/:group/:tier', (req, res) => {
     const tier = req.params.tier
     const mediaTypeLoc = req.body.newType ? 'newTypes.' : ''
     
-    console.log(`PUT /api/user/${mediaType}/${group}/${tier}:`, {
-      userId: req.user.ID,
-      mediaType,
-      group,
-      tier,
-      newTitle: req.body.newTitle,
-      newType: req.body.newType,
-      mediaTypeLoc,
-      updatePath: `${mediaTypeLoc}${mediaType}.${group}Tiers.${tier}`
-    });
-    
     User.findOneAndUpdate(
         { ID: req.user.ID }, 
         { $set: { [`${mediaTypeLoc}${mediaType}.${group}Tiers.${tier}`]: req.body.newTitle } },
         { new: true }
       )
       .then(updatedUser => {
-        console.log(`PUT /api/user/${mediaType}/${group}/${tier}:`);
         try {
           if (req.body.newType){
             // Normalize Map -> plain object in session for safe access
             const newTypesObj = Object.fromEntries(updatedUser.newTypes);
             req.session.passport.user.newTypes = newTypesObj;
-            console.log('Updated newTypes tier title');
           } else {
-            console.log('Updating session for default type...');
-            console.log('Current session user structure:', Object.keys(req.session.passport.user));
-            
             if (!req.session.passport.user[mediaType]) {
-              console.log(`Creating ${mediaType} object in session`);
               req.session.passport.user[mediaType] = {};
             }
             if (!req.session.passport.user[mediaType][`${group}Tiers`]) {
-              console.log(`Creating ${group}Tiers object in session`);
               req.session.passport.user[mediaType][`${group}Tiers`] = {};
             }
             req.session.passport.user[mediaType][`${group}Tiers`][tier] = req.body.newTitle;
-            console.log('Updated default type tier title in session');
           }
+          console.log(`Updated tier: ${mediaType} ${group} ${tier} = "${req.body.newTitle}"`);
           res.json({ msg: 'User Tier changed successfully!' })
         } catch (sessionError) {
-          console.log('Session update error:', sessionError);
+          console.error('Session update error:', sessionError);
           // Even if session update fails, the database was updated successfully
           res.json({ msg: 'User Tier changed successfully! (Session update failed)' })
         }
       })
       .catch(error => {
-        console.log(error);
+        console.error('Error updating user tier:', error);
         res.status(400).json({ error: 'Unable to Update User Tier' })
       })
   });
@@ -105,12 +87,12 @@ router.put('/newTypes', (req, res) => {
       )
       .then(updatedUser => {
         const newTypes = [...updatedUser.newTypes.keys()]
-        console.log('Created New Type', newType)
         req.session.passport.user.newTypes = updatedUser.newTypes
+        console.log('Created new media type:', newType);
         res.json({ msg: 'New Type Created successfully!', newTypes:newTypes })
       })
       .catch(error => {
-        console.log(error)
+        console.error('Error adding new type:', error);
         res.status(400).json({ error: 'Unable to Add New Type' })
       })
   });

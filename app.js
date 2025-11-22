@@ -2,10 +2,12 @@
 const connectDB = require('./config/db');
 
 const session = require("express-session");
+const MongoStore = require("connect-mongo");
 const express = require("express");
 const cors = require("cors");
 const passportSetup = require("./config/passport");  // needed otherwise Unknown authentication strategy "google"
 const passport = require("passport");
+const mongoose = require("mongoose");
 const authRoute = require("./routes/auth");
 const media = require('./routes/api/media');
 const userApi = require('./routes/api/user');
@@ -28,10 +30,14 @@ app.use(
 if(process.env.STATUS === 'local' || !process.env.STATUS) {
     app.use(
         session({ 
-            name: "session",  // Keep same cookie name as before
+            name: "session",
             secret: "lama", 
             resave: false,
             saveUninitialized: false,
+            store: MongoStore.create({
+                client: mongoose.connection.getClient(),  // Reuse existing mongoose connection
+                touchAfter: 24 * 3600  // Lazy session update: only update once per 24h
+            }),
             cookie: {
                 maxAge: 7 * 24 * 60 * 60 * 1000,
                 sameSite: 'lax',
@@ -44,17 +50,21 @@ else if(process.env.STATUS === 'deploy')
 {
     app.use(
         session({ 
-            name: "session",  // Keep same cookie name as before
+            name: "session",
             secret: process.env.SESSION_SECRET || "lama",
             resave: false,
             saveUninitialized: false,
+            store: MongoStore.create({
+                client: mongoose.connection.getClient(),  // Reuse existing mongoose connection
+                touchAfter: 24 * 3600  // Lazy session update: only update once per 24h
+            }),
             proxy: true,  // Trust the reverse proxy
             cookie: {
                 maxAge: 7 * 24 * 60 * 60 * 1000,
                 secure: true,
                 sameSite: 'none',
                 httpOnly: true,
-                domain: undefined  // Let it default to current domain
+                domain: undefined
             }
         })
     );

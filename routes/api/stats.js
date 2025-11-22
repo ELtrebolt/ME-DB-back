@@ -63,7 +63,6 @@ router.get('/', async (req, res) => {
     typeDistribution[type] = count;
   });
   
-  console.log('Type distribution:', typeDistribution);
     
     // Distribution by Year
     const yearDistribution = {};
