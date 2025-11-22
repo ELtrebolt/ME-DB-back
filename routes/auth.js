@@ -22,6 +22,13 @@ router.get("/login/failed", (req, res) => {
 
 router.get("/login/success", (req, res) => {
     try {
+        console.log("=== /login/success ===");
+        console.log("Session ID:", req.sessionID);
+        console.log("User:", req.user ? req.user.displayName : "NULL");
+        console.log("Session passport:", JSON.stringify(req.session?.passport));
+        console.log("Cookie:", req.headers.cookie);
+        console.log("=====================");
+        
         if(req.user)
         {
             res.status(200).json({
@@ -59,7 +66,21 @@ router.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: '/login/failed' }),
   (req, res) => {
-    res.redirect(CLIENT_URL + '/home');
+    console.log("=== OAuth Callback ===");
+    console.log("User authenticated:", req.user ? "YES - " + req.user.displayName : "NO");
+    console.log("Session ID:", req.sessionID);
+    console.log("Session passport:", JSON.stringify(req.session?.passport));
+    
+    // CRITICAL: Explicitly save session before redirect
+    req.session.save((err) => {
+      if (err) {
+        console.error("Session save error:", err);
+        return res.redirect(CLIENT_URL + '/home?error=session');
+      }
+      console.log("Session saved successfully");
+      console.log("=====================");
+      res.redirect(CLIENT_URL + '/home');
+    });
   }
 )
 

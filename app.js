@@ -34,7 +34,8 @@ if(process.env.STATUS === 'local' || !process.env.STATUS) {
             saveUninitialized: false,
             cookie: {
                 maxAge: 7 * 24 * 60 * 60 * 1000,
-                sameSite: 'lax'
+                sameSite: 'lax',
+                httpOnly: true
             }
         })
     );
@@ -44,14 +45,16 @@ else if(process.env.STATUS === 'deploy')
     app.use(
         session({ 
             name: "session",  // Keep same cookie name as before
-            secret: "lama",
+            secret: process.env.SESSION_SECRET || "lama",
             resave: false,
             saveUninitialized: false,
+            proxy: true,  // Trust the reverse proxy
             cookie: {
                 maxAge: 7 * 24 * 60 * 60 * 1000,
                 secure: true,
                 sameSite: 'none',
-                httpOnly: true
+                httpOnly: true,
+                domain: undefined  // Let it default to current domain
             }
         })
     );
