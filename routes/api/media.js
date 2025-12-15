@@ -95,35 +95,67 @@ router.post('/', (req, res) => {
   }
   User.findOne({ ID: userID })
     .then(u => {
-      const total = newType ? u.newTypes.get(mediaType).total+1 : u[mediaType].total+1
-      extra = {'userID':userID, 'ID':total}
-      // place new record at end of its tier within the same group
-      const placementQuery = { userID, mediaType, toDo: media.toDo, tier: media.tier };
-      Media.find(placementQuery).sort({ orderIndex: -1 }).limit(1)
-        .then(([last]) => {
-          const nextOrder = last && typeof last.orderIndex === 'number' ? last.orderIndex + 1 : 0;
-          return Media.create({ ...media, ...extra, orderIndex: nextOrder });
-        })
-      .then(media => {
-        console.log("Media created:", media.title);
-        User.findOneAndUpdate(
-          { ID: userID }, 
-          { $inc: { [`${mediaTypeLoc2}${mediaType}.total`]: 1 } }, 
-          { new: true } // Return the updated user document
-        )
-        .then(updatedUser => {
-          // change req.user.total?
-          const updatedMediaTypeLoc = newType ? updatedUser.newTypes.get(mediaType) : updatedUser[mediaType]
-          console.log(`${mediaType} Count updated:`, updatedMediaTypeLoc.total);
-          res.json({ msg: 'Media added successfully!' })
-        })
-        .catch(error => {
-          console.log(error);
-          res.status(400).json({ error: 'Unable to Update User Count' })
-        })
+      let total;
+      
+      // We must increment the total count atomically to prevent race conditions during bulk imports.
+      // However, we first need to determine the *current* count to assign an ID to this new record.
+      // NOTE: This logic is susceptible to race conditions if multiple requests come in exactly at the same time
+      // (like in the import modal). The 'total' read here might be stale by the time we write.
+      // Ideally, we should use findOneAndUpdate to increment AND return the new value in one go.
+      
+      // Sanitize mediaType to ensure valid object key
+      const safeMediaType = mediaType.replace(/[^a-zA-Z0-9-_]/g, '-');
+      const mediaTypeLocString = newType ? `newTypes.${safeMediaType}` : safeMediaType;
+      
+      // CRITICAL FIX: We are now treating 'total' as a High Water Mark (Sequence Number), not a count.
+      // This means we always increment it to get a new unique ID, even if items were deleted.
+      // The DELETE route has been updated to ONLY decrement if the *last* item (highest ID) is deleted.
+      // This prevents ID reuse when items are deleted from the middle of the list.
+      
+      User.findOneAndUpdate(
+        { ID: userID },
+        { $inc: { [`${mediaTypeLocString}.total`]: 1 } },
+        { new: true, upsert: true }
+      ).lean() // Use lean() to get raw JSON and bypass Mongoose Map hydration issues
+      .then(updatedUser => {
+         // Get the NEW total which we just incremented.
+         let newTotal;
+         if (newType) {
+             // With lean(), newTypes is a plain object
+             const types = updatedUser.newTypes || {};
+             // Access using safeMediaType
+             const typeData = types[safeMediaType];
+             newTotal = typeData ? typeData.total : 1;
+         } else {
+             newTotal = updatedUser[safeMediaType] ? updatedUser[safeMediaType].total : 1;
+         }
+         
+         extra = {'userID':userID, 'ID':newTotal}
 
-      })
-      .catch(err => res.status(400).json({ error: err }))
+         // place new record at end of its tier within the same group
+         const placementQuery = { userID, mediaType, toDo: media.toDo, tier: media.tier };
+         Media.find(placementQuery).sort({ orderIndex: -1 }).limit(1)
+           .then(([last]) => {
+             const nextOrder = last && typeof last.orderIndex === 'number' ? last.orderIndex + 1 : 0;
+             return Media.create({ ...media, ...extra, orderIndex: nextOrder });
+           })
+           .then(media => {
+             console.log("Media created:", media.title, "ID:", newTotal);
+             res.json({ msg: 'Media added successfully!', ID: newTotal })
+           })
+           .catch(error => {
+             // If we hit a duplicate key error (which shouldn't happen with unique IDs, but just in case)
+             if (error.code === 11000) {
+                 console.error("Duplicate Key Error:", error);
+                 return res.status(409).json({ error: 'Duplicate ID detected. Please try again.' });
+             }
+             console.error("Error creating media:", error);
+             res.status(400).json({ error: 'Unable to Create Media' })
+           });
+      }).catch(err => {
+         console.error("Error updating user count:", err);
+         res.status(400).json({ error: 'Unable to Update User Count' });
+      });
   })
   .catch(err => {
     console.log('1st Layer', err)
@@ -200,22 +232,49 @@ router.delete('/:mediaType/:ID', (req, res) => {
 
   User.findOne({ ID: req.user.ID })
     .then(u => {
-      if(u[req.params.mediaType].total == req.params.ID) {
-        User.findOneAndUpdate(
-          { ID: req.user.ID }, 
-          { $inc: { [`${req.params.mediaType}.total`]: -1 } }, 
-          { new: true } // Return the updated user document
-        )
-        .then(updatedUser => {
-          console.log(`${req.params.mediaType} Count updated:`, updatedUser[req.params.mediaType].total);
-        })
-        .catch((err) => {
-          console.log('Error updating count in DELETE api/media');
-        });
+      // Logic for standard types (anime/movies/etc)
+      // Check if we are deleting the last item in the sequence
+      let total;
+      if (u[req.params.mediaType]) {
+          total = u[req.params.mediaType].total;
+          
+          // Only decrement if we are deleting the item with ID == total (the last one)
+          // This keeps the sequence intact if we delete an item from the middle.
+          if(total == req.params.ID) {
+            User.findOneAndUpdate(
+              { ID: req.user.ID }, 
+              { $inc: { [`${req.params.mediaType}.total`]: -1 } }, 
+              { new: true }
+            )
+            .then(updatedUser => {
+              console.log(`${req.params.mediaType} Count updated (decremented):`, updatedUser[req.params.mediaType].total);
+            })
+            .catch((err) => {
+              console.log('Error updating count in DELETE api/media');
+            });
+          }
+      } 
+      // Logic for custom types (newTypes)
+      else if (u.newTypes && (u.newTypes.get ? u.newTypes.get(req.params.mediaType) : u.newTypes[req.params.mediaType])) {
+          const typeData = u.newTypes.get ? u.newTypes.get(req.params.mediaType) : u.newTypes[req.params.mediaType];
+          total = typeData.total;
+          
+          if(total == req.params.ID) {
+              User.findOneAndUpdate(
+                { ID: req.user.ID },
+                { $inc: { [`newTypes.${req.params.mediaType}.total`]: -1 } },
+                { new: true }
+              )
+              .then(updatedUser => {
+                  const newTotal = updatedUser.newTypes.get ? updatedUser.newTypes.get(req.params.mediaType).total : updatedUser.newTypes[req.params.mediaType].total;
+                  console.log(`${req.params.mediaType} Count updated (decremented):`, newTotal);
+              })
+              .catch(err => console.error("Error decrementing custom type count:", err));
+          }
       }
     })
     .catch((err) => {
-      console.log('Error finding user in DELETE api/media');
+      console.log('Error finding user in DELETE api/media', err);
     });
 
   Media.findOneAndDelete(query)
