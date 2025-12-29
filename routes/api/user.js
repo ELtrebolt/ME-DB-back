@@ -97,4 +97,28 @@ router.put('/newTypes', (req, res) => {
       })
   });
 
+// @route PUT api/user/customizations
+// @description Update user customizations (e.g. homePage)
+router.put('/customizations', (req, res) => {
+  const updates = {};
+  if (req.body.homePage) {
+    updates['customizations.homePage'] = req.body.homePage;
+  }
+
+  User.findOneAndUpdate(
+    { ID: req.user.ID },
+    { $set: updates },
+    { new: true }
+  )
+  .then(user => {
+    // Session update is handled by deserializeUser on next request
+    console.log(`Updated customizations: homePage = "${req.body.homePage}"`);
+    res.json({ msg: 'Customizations updated successfully', user: user });
+  })
+  .catch(err => {
+    console.error('Error updating customizations:', err);
+    res.status(400).json({ error: 'Unable to update customizations' });
+  });
+});
+
   module.exports = router;

@@ -17,6 +17,9 @@ const UserSchema = new mongoose.Schema({
     type: Map,
     of: mongoose.Schema.Types.Mixed
   },
+  customizations: {
+    homePage: String
+  },
 
   movies: {
     total: Number,

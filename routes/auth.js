@@ -66,7 +66,10 @@ router.get(
         return res.redirect(CLIENT_URL + '/?error=session');
       }
       // Redirect directly to anime/collection instead of /home to avoid race condition
-      res.redirect(CLIENT_URL + '/anime/collection');
+      const redirectPath = (req.user && req.user.customizations && req.user.customizations.homePage) 
+        ? `/${req.user.customizations.homePage}` 
+        : '/anime/collection';
+      res.redirect(CLIENT_URL + redirectPath);
     });
   }
 )
