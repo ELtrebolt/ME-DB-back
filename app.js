@@ -12,6 +12,7 @@ const authRoute = require("./routes/auth");
 const media = require('./routes/api/media');
 const userApi = require('./routes/api/user');
 const statsApi = require('./routes/api/stats');
+const shareApi = require('./routes/api/share');
 const constants = require('./config/constants');
 
 const app = express();
@@ -93,6 +94,7 @@ app.get('/test', (req, res) => {
 app.use('/api/media', media);
 app.use('/api/user', userApi);
 app.use('/api/stats', statsApi);
+app.use('/api/share', shareApi);
 app.use('/auth', authRoute);
 
 // Global error handler
