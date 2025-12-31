@@ -17,9 +17,14 @@ passport.use(new GoogleStrategy({
       if (user) {
         return done(null, user);
       } else {
+        // Generate random username like "User12345"
+        const randomNumber = Math.floor(Math.random() * 90000) + 10000;
+        const autoUsername = `User${randomNumber}`;
+        
         const newUser = new User({
           ID: profile.id,
           displayName: profile.displayName,
+          username: autoUsername,
           // email: profile.emails[0].value,
           profilePic: profile.photos[0].value,
           newTypes: new Map(),

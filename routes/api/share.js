@@ -172,7 +172,7 @@ router.get('/:token', async (req, res) => {
 
     console.log('Share API - tierTitles:', { tierTitles, collectionTierTitles, todoTierTitles, mediaType });
 
-    const ownerName = user ? (user.displayName.split(' ')[0] || user.displayName) : 'User';
+    const ownerName = user ? (user.username || user.displayName.split(' ')[0] || user.displayName) : 'User';
 
     res.json({
       success: true,

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const User = require('../../models/User');
+const ShareLink = require('../../models/ShareLink');
 
 // Authentication middleware
 const requireAuth = (req, res, next) => {
@@ -119,6 +120,62 @@ router.put('/customizations', (req, res) => {
     console.error('Error updating customizations:', err);
     res.status(400).json({ error: 'Unable to update customizations' });
   });
+});
+
+// @route PUT api/user/username
+// @description Update username
+router.put('/username', (req, res) => {
+  const { username } = req.body;
+  
+  if (!username || username.trim().length === 0) {
+    return res.status(400).json({ error: 'Username cannot be empty' });
+  }
+
+  if (username.length > 50) {
+    return res.status(400).json({ error: 'Username must be 50 characters or less' });
+  }
+
+  User.findOneAndUpdate(
+    { ID: req.user.ID },
+    { $set: { username: username.trim() } },
+    { new: true }
+  )
+  .then(user => {
+    // Update session
+    if (req.session.passport && req.session.passport.user) {
+      req.session.passport.user.username = username.trim();
+    }
+    console.log(`Updated username to: "${username}"`);
+    res.json({ msg: 'Username updated successfully', username: user.username });
+  })
+  .catch(err => {
+    console.error('Error updating username:', err);
+    res.status(400).json({ error: 'Unable to update username' });
+  });
+});
+
+// @route GET api/user/shared-lists
+// @description Get all active share links for the current user
+router.get('/shared-lists', async (req, res) => {
+  try {
+    const userID = req.user.ID;
+    
+    // Find all share links for this user
+    const shareLinks = await ShareLink.find({ userID }).sort({ mediaType: 1 });
+    
+    // Format the response
+    const sharedLists = shareLinks.map(link => ({
+      mediaType: link.mediaType,
+      token: link.token,
+      shareConfig: link.shareConfig,
+      createdAt: link.createdAt
+    }));
+    
+    res.json({ success: true, sharedLists });
+  } catch (err) {
+    console.error('Error fetching shared lists:', err);
+    res.status(500).json({ error: 'Unable to fetch shared lists' });
+  }
 });
 
   module.exports = router;
