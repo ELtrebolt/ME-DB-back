@@ -108,6 +108,107 @@ router.delete('/:mediaType', requireAuth, async (req, res) => {
   }
 });
 
+// Helper to get shared data based on shareLink record
+const getSharedData = async (shareLink) => {
+  const { userID, mediaType, shareConfig } = shareLink;
+
+  // Build query based on config
+  const query = {
+    userID,
+    mediaType
+  };
+
+  // If not sharing both, filter by toDo status
+  if (shareConfig.collection && !shareConfig.todo) {
+    query.toDo = false;
+  } else if (!shareConfig.collection && shareConfig.todo) {
+    query.toDo = true;
+  }
+  // If both are true, we don't need to filter by toDo (fetch all)
+
+  // Fetch media
+  const media = await Media.find(query).sort({ tier: 1, orderIndex: 1, title: 1 });
+
+  // Fetch User to get display name (optional, but nice for "Users Collection")
+  // Also fetch custom tier titles
+  const user = await User.findOne({ ID: userID });
+  
+  // Extract tier titles
+  let tierTitles = {};
+  let collectionTierTitles = {};
+  let todoTierTitles = {};
+  
+  if (user) {
+      // Check if it's a newType (custom type)
+      const isNewType = user.newTypes && (user.newTypes.get ? user.newTypes.get(mediaType) : user.newTypes[mediaType]);
+      const typeData = isNewType ? (user.newTypes.get ? user.newTypes.get(mediaType) : user.newTypes[mediaType]) : user[mediaType];
+      
+      if (typeData) {
+          collectionTierTitles = typeData.collectionTiers || {};
+          todoTierTitles = typeData.todoTiers || {};
+          
+          // Set the default tierTitles based on what's being shared
+          if (shareConfig.collection && !shareConfig.todo) {
+              tierTitles = collectionTierTitles;
+          } else if (!shareConfig.collection && shareConfig.todo) {
+              tierTitles = todoTierTitles;
+          } else {
+              // If both are shared, default to collection titles
+              tierTitles = collectionTierTitles;
+          }
+      }
+  }
+
+  const ownerName = user ? (user.username || user.displayName.split(' ')[0] || user.displayName) : 'User';
+
+  return {
+    media,
+    shareConfig,
+    mediaType,
+    ownerName,
+    tierTitles,
+    collectionTierTitles,
+    todoTierTitles
+  };
+};
+
+// @route GET api/share/user/:username/:mediaType
+// @description Get shared data by username and mediaType
+// @access Public
+router.get('/user/:username/:mediaType', async (req, res) => {
+  try {
+    const { username, mediaType } = req.params;
+
+    // 1. Find the user
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // 2. Check if profile is public
+    if (!user.isPublicProfile) {
+      return res.status(403).json({ error: 'This profile is private' });
+    }
+
+    // 3. Find the share link for this mediaType
+    const shareLink = await ShareLink.findOne({ userID: user.ID, mediaType });
+    if (!shareLink) {
+      return res.status(404).json({ error: 'Shared list not found' });
+    }
+
+    // 4. Get and return data
+    const data = await getSharedData(shareLink);
+    res.json({
+      success: true,
+      ...data
+    });
+
+  } catch (error) {
+    console.error('Error fetching shared user data:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // @route GET api/share/:token
 // @description Get shared data
 // @access Public
@@ -121,68 +222,10 @@ router.get('/:token', async (req, res) => {
       return res.status(404).json({ error: 'Share link not found or expired' });
     }
 
-    const { userID, mediaType, shareConfig } = shareLink;
-
-    // Build query based on config
-    const query = {
-      userID,
-      mediaType
-    };
-
-    // If not sharing both, filter by toDo status
-    if (shareConfig.collection && !shareConfig.todo) {
-      query.toDo = false;
-    } else if (!shareConfig.collection && shareConfig.todo) {
-      query.toDo = true;
-    }
-    // If both are true, we don't need to filter by toDo (fetch all)
-
-    // Fetch media
-    const media = await Media.find(query).sort({ tier: 1, orderIndex: 1, title: 1 });
-
-    // Fetch User to get display name (optional, but nice for "Users Collection")
-    // Also fetch custom tier titles
-    const user = await User.findOne({ ID: userID });
-    
-    // Extract tier titles
-    let tierTitles = {};
-    let collectionTierTitles = {};
-    let todoTierTitles = {};
-    
-    if (user) {
-        // Check if it's a newType (custom type)
-        const isNewType = user.newTypes && (user.newTypes.get ? user.newTypes.get(mediaType) : user.newTypes[mediaType]);
-        const typeData = isNewType ? (user.newTypes.get ? user.newTypes.get(mediaType) : user.newTypes[mediaType]) : user[mediaType];
-        
-        if (typeData) {
-            collectionTierTitles = typeData.collectionTiers || {};
-            todoTierTitles = typeData.todoTiers || {};
-            
-            // Set the default tierTitles based on what's being shared
-            if (shareConfig.collection && !shareConfig.todo) {
-                tierTitles = collectionTierTitles;
-            } else if (!shareConfig.collection && shareConfig.todo) {
-                tierTitles = todoTierTitles;
-            } else {
-                // If both are shared, default to collection titles
-                tierTitles = collectionTierTitles;
-            }
-        }
-    }
-
-    console.log('Share API - tierTitles:', { tierTitles, collectionTierTitles, todoTierTitles, mediaType });
-
-    const ownerName = user ? (user.username || user.displayName.split(' ')[0] || user.displayName) : 'User';
-
+    const data = await getSharedData(shareLink);
     res.json({
       success: true,
-      media,
-      shareConfig,
-      mediaType,
-      ownerName,
-      tierTitles,
-      collectionTierTitles,
-      todoTierTitles
+      ...data
     });
 
   } catch (error) {

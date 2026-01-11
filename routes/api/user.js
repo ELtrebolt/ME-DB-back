@@ -15,8 +15,70 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
-// Apply authentication middleware to all routes
+// @route GET api/user/public/:username
+// @description Get public user profile info and shared lists
+router.get('/public/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = await User.findOne({ username });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (!user.isPublicProfile) {
+      return res.status(403).json({ success: false, message: 'This profile is private' });
+    }
+
+    // Get shared lists for this user
+    const shareLinks = await ShareLink.find({ userID: user.ID }).sort({ mediaType: 1 });
+    const sharedLists = shareLinks.map(link => ({
+      mediaType: link.mediaType,
+      token: link.token,
+      shareConfig: link.shareConfig
+    }));
+
+    res.json({
+      success: true,
+      user: {
+        username: user.username,
+        displayName: user.displayName,
+        profilePic: user.profilePic,
+        isPublicProfile: user.isPublicProfile
+      },
+      sharedLists
+    });
+  } catch (err) {
+    console.error('Error fetching public profile:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Apply authentication middleware to all subsequent routes
 router.use(requireAuth);
+
+// @route PUT api/user/visibility
+// @description Toggle profile visibility
+router.put('/visibility', (req, res) => {
+  const { isPublicProfile } = req.body;
+  
+  User.findOneAndUpdate(
+    { ID: req.user.ID },
+    { $set: { isPublicProfile } },
+    { new: true }
+  )
+  .then(user => {
+    // Update session
+    if (req.session.passport && req.session.passport.user) {
+      req.session.passport.user.isPublicProfile = user.isPublicProfile;
+    }
+    res.json({ success: true, isPublicProfile: user.isPublicProfile });
+  })
+  .catch(err => {
+    console.error('Error updating visibility:', err);
+    res.status(400).json({ error: 'Unable to update visibility' });
+  });
+});
 
 // @route PUT api/user/mediaType/group/tier
 // @description Update TierTitle name
@@ -131,21 +193,29 @@ router.put('/username', (req, res) => {
     return res.status(400).json({ error: 'Username cannot be empty' });
   }
 
-  if (username.length > 50) {
-    return res.status(400).json({ error: 'Username must be 50 characters or less' });
+  const trimmedUsername = username.trim();
+  
+  if (trimmedUsername.length > 30) {
+    return res.status(400).json({ error: 'Username must be 30 characters or less' });
+  }
+
+  // Standard username validation: alphanumeric and underscores only, must start with letter or number
+  const usernameRegex = /^[a-zA-Z0-9][a-zA-Z0-9_]*$/;
+  if (!usernameRegex.test(trimmedUsername)) {
+    return res.status(400).json({ error: 'Username can only contain letters, numbers, and underscores, and must start with a letter or number' });
   }
 
   User.findOneAndUpdate(
     { ID: req.user.ID },
-    { $set: { username: username.trim() } },
+    { $set: { username: trimmedUsername } },
     { new: true }
   )
   .then(user => {
     // Update session
     if (req.session.passport && req.session.passport.user) {
-      req.session.passport.user.username = username.trim();
+      req.session.passport.user.username = trimmedUsername;
     }
-    console.log(`Updated username to: "${username}"`);
+    console.log(`Updated username to: "${trimmedUsername}"`);
     res.json({ msg: 'Username updated successfully', username: user.username });
   })
   .catch(err => {
