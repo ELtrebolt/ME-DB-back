@@ -31,8 +31,32 @@ router.get('/public/:username', async (req, res) => {
     }
 
     // Get shared lists for this user
-    const shareLinks = await ShareLink.find({ userID: user.ID }).sort({ mediaType: 1 });
-    const sharedLists = shareLinks.map(link => ({
+    const shareLinks = await ShareLink.find({ userID: user.ID });
+    const order = user.sharedListsOrder || [];
+    
+    // Create a map for quick lookup
+    const linkMap = new Map(shareLinks.map(link => [link.mediaType, link]));
+    
+    // Sort by custom order, then by mediaType for items not in order
+    const orderedLists = [];
+    const unorderedMediaTypes = new Set(shareLinks.map(link => link.mediaType));
+    
+    // Add items in the specified order
+    order.forEach(mediaType => {
+      if (linkMap.has(mediaType)) {
+        orderedLists.push(linkMap.get(mediaType));
+        unorderedMediaTypes.delete(mediaType);
+      }
+    });
+    
+    // Add remaining items sorted by mediaType
+    const unorderedLists = Array.from(unorderedMediaTypes)
+      .map(mediaType => linkMap.get(mediaType))
+      .sort((a, b) => a.mediaType.localeCompare(b.mediaType));
+    
+    const allLists = orderedLists.concat(unorderedLists);
+    
+    const sharedLists = allLists.map(link => ({
       mediaType: link.mediaType,
       token: link.token,
       shareConfig: link.shareConfig
@@ -205,23 +229,41 @@ router.put('/username', (req, res) => {
     return res.status(400).json({ error: 'Username can only contain letters, numbers, and underscores, and must start with a letter or number' });
   }
 
-  User.findOneAndUpdate(
-    { ID: req.user.ID },
-    { $set: { username: trimmedUsername } },
-    { new: true }
-  )
-  .then(user => {
-    // Update session
-    if (req.session.passport && req.session.passport.user) {
-      req.session.passport.user.username = trimmedUsername;
-    }
-    console.log(`Updated username to: "${trimmedUsername}"`);
-    res.json({ msg: 'Username updated successfully', username: user.username });
-  })
-  .catch(err => {
-    console.error('Error updating username:', err);
-    res.status(400).json({ error: 'Unable to update username' });
-  });
+  // Check if username is already taken (excluding current user)
+  User.findOne({ username: trimmedUsername })
+    .then(existingUser => {
+      if (existingUser && existingUser.ID !== req.user.ID) {
+        return res.status(400).json({ error: 'Username already taken' });
+      }
+      
+      // Update username
+      User.findOneAndUpdate(
+        { ID: req.user.ID },
+        { $set: { username: trimmedUsername } },
+        { new: true }
+      )
+      .then(user => {
+        // Update session
+        if (req.session.passport && req.session.passport.user) {
+          req.session.passport.user.username = trimmedUsername;
+        }
+        console.log(`Updated username to: "${trimmedUsername}"`);
+        res.json({ msg: 'Username updated successfully', username: user.username });
+      })
+      .catch(err => {
+        // Handle duplicate key error (MongoDB error code 11000)
+        if (err.code === 11000 || err.codeName === 'DuplicateKey') {
+          console.error('Duplicate username error:', err);
+          return res.status(400).json({ error: 'Username already taken' });
+        }
+        console.error('Error updating username:', err);
+        res.status(400).json({ error: 'Unable to update username' });
+      });
+    })
+    .catch(err => {
+      console.error('Error checking username:', err);
+      res.status(400).json({ error: 'Unable to update username' });
+    });
 });
 
 // @route GET api/user/shared-lists
@@ -231,10 +273,36 @@ router.get('/shared-lists', async (req, res) => {
     const userID = req.user.ID;
     
     // Find all share links for this user
-    const shareLinks = await ShareLink.find({ userID }).sort({ mediaType: 1 });
+    const shareLinks = await ShareLink.find({ userID });
+    
+    // Get user to access sharedListsOrder
+    const user = await User.findOne({ ID: userID });
+    const order = user?.sharedListsOrder || [];
+    
+    // Create a map for quick lookup
+    const linkMap = new Map(shareLinks.map(link => [link.mediaType, link]));
+    
+    // Sort by custom order, then by mediaType for items not in order
+    const orderedLists = [];
+    const unorderedMediaTypes = new Set(shareLinks.map(link => link.mediaType));
+    
+    // Add items in the specified order
+    order.forEach(mediaType => {
+      if (linkMap.has(mediaType)) {
+        orderedLists.push(linkMap.get(mediaType));
+        unorderedMediaTypes.delete(mediaType);
+      }
+    });
+    
+    // Add remaining items sorted by mediaType
+    const unorderedLists = Array.from(unorderedMediaTypes)
+      .map(mediaType => linkMap.get(mediaType))
+      .sort((a, b) => a.mediaType.localeCompare(b.mediaType));
+    
+    const allLists = orderedLists.concat(unorderedLists);
     
     // Format the response
-    const sharedLists = shareLinks.map(link => ({
+    const sharedLists = allLists.map(link => ({
       mediaType: link.mediaType,
       token: link.token,
       shareConfig: link.shareConfig,
@@ -245,6 +313,28 @@ router.get('/shared-lists', async (req, res) => {
   } catch (err) {
     console.error('Error fetching shared lists:', err);
     res.status(500).json({ error: 'Unable to fetch shared lists' });
+  }
+});
+
+// @route PUT api/user/shared-lists-order
+// @description Update the order of shared lists
+router.put('/shared-lists-order', async (req, res) => {
+  try {
+    const { order } = req.body; // Array of mediaTypes in desired order
+    
+    if (!Array.isArray(order)) {
+      return res.status(400).json({ error: 'Order must be an array' });
+    }
+    
+    await User.findOneAndUpdate(
+      { ID: req.user.ID },
+      { $set: { sharedListsOrder: order } }
+    );
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error updating shared lists order:', err);
+    res.status(500).json({ error: 'Unable to update order' });
   }
 });
 

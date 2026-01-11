@@ -29,6 +29,10 @@ const UserSchema = new mongoose.Schema({
   customizations: {
     homePage: String
   },
+  sharedListsOrder: {
+    type: [String],
+    default: []
+  },
 
   movies: {
     total: Number,
