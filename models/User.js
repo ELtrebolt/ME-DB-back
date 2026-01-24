@@ -33,6 +33,29 @@ const UserSchema = new mongoose.Schema({
     type: [String],
     default: []
   },
+  friends: {
+    type: [String],
+    default: []
+  },
+  friendRequests: [{
+    from: {
+      type: String,
+      required: true
+    },
+    to: {
+      type: String,
+      required: true
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'accepted', 'rejected'],
+      default: 'pending'
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
 
   movies: {
     total: Number,

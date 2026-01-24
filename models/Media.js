@@ -26,7 +26,16 @@ const MediaSchema = new mongoose.Schema({
     required: true
   },
   year: {
-    type: Number
+    type: Date,
+    set: function(v) {
+      if (typeof v === 'number' && v > 1000 && v < 3000) {
+        return new Date(v, 0, 1);
+      }
+      if (typeof v === 'string' && /^\d{4}$/.test(v)) {
+        return new Date(v, 0, 1);
+      }
+      return v;
+    }
   },
   tags: {
     type: Array

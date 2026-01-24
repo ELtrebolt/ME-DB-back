@@ -349,7 +349,7 @@ router.get('/export', async (req, res) => {
       const title = media.title ? `"${media.title.replace(/"/g, '""')}"` : '';
       const tier = media.tier || '';
       const toDo = media.toDo ? 'Yes' : 'No';
-      const year = media.year || '';
+      const year = media.year ? new Date(media.year).toISOString().split('T')[0] : '';
       const tags = media.tags && media.tags.length > 0 ? `"${media.tags.join(', ')}"` : '';
       const description = media.description ? `"${media.description.replace(/"/g, '""')}"` : '';
       

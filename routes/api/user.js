@@ -30,6 +30,35 @@ router.get('/public/:username', async (req, res) => {
       return res.status(403).json({ success: false, message: 'This profile is private' });
     }
 
+    // Determine friendship status if user is authenticated
+    let friendshipStatus = 'none';
+    if (req.user) {
+      const currentUser = await User.findOne({ ID: req.user.ID });
+      if (currentUser) {
+        if (currentUser.ID === user.ID) {
+          friendshipStatus = 'self';
+        } else if (currentUser.friends && currentUser.friends.includes(user.ID)) {
+          friendshipStatus = 'friends';
+        } else if (currentUser.friendRequests) {
+          // Check if there's a pending request from current user to this user
+          const outgoingRequest = currentUser.friendRequests.find(
+            req => req.from === currentUser.ID && req.to === user.ID && req.status === 'pending'
+          );
+          if (outgoingRequest) {
+            friendshipStatus = 'request_sent';
+          } else {
+            // Check if there's a pending request from this user to current user
+            const incomingRequest = currentUser.friendRequests.find(
+              req => req.from === user.ID && req.to === currentUser.ID && req.status === 'pending'
+            );
+            if (incomingRequest) {
+              friendshipStatus = 'request_received';
+            }
+          }
+        }
+      }
+    }
+
     // Get shared lists for this user
     const shareLinks = await ShareLink.find({ userID: user.ID });
     const order = user.sharedListsOrder || [];
@@ -70,7 +99,8 @@ router.get('/public/:username', async (req, res) => {
         profilePic: user.profilePic,
         isPublicProfile: user.isPublicProfile
       },
-      sharedLists
+      sharedLists,
+      friendshipStatus
     });
   } catch (err) {
     console.error('Error fetching public profile:', err);

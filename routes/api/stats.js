@@ -68,7 +68,8 @@ router.get('/', async (req, res) => {
     const yearDistribution = {};
     allMedia.forEach(media => {
       if (media.year) {
-        yearDistribution[media.year] = (yearDistribution[media.year] || 0) + 1;
+        const year = new Date(media.year).getFullYear();
+        yearDistribution[year] = (yearDistribution[year] || 0) + 1;
       }
     });
     
@@ -89,10 +90,11 @@ router.get('/', async (req, res) => {
     
     allMedia.forEach(media => {
       if (media.year) {
+        const year = new Date(media.year).getFullYear();
         if (media.toDo) {
-          yearDistributionByFilter.toDo[media.year] = (yearDistributionByFilter.toDo[media.year] || 0) + 1;
+          yearDistributionByFilter.toDo[year] = (yearDistributionByFilter.toDo[year] || 0) + 1;
         } else {
-          yearDistributionByFilter.collection[media.year] = (yearDistributionByFilter.collection[media.year] || 0) + 1;
+          yearDistributionByFilter.collection[year] = (yearDistributionByFilter.collection[year] || 0) + 1;
         }
       }
     });
