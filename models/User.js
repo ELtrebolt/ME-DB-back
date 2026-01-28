@@ -62,24 +62,32 @@ const UserSchema = new mongoose.Schema({
     collectionTiers: mongoose.Schema.Types.Mixed,
     todoTiers: mongoose.Schema.Types.Mixed,
     customAttributes: mongoose.Schema.Types.Mixed,
+    collectionDescription: String,
+    todoDescription: String,
   },
   tv: {
     total: Number,
     collectionTiers: mongoose.Schema.Types.Mixed,
     todoTiers: mongoose.Schema.Types.Mixed,
     customAttributes: mongoose.Schema.Types.Mixed,
+    collectionDescription: String,
+    todoDescription: String,
   },
   anime: {
     total: Number,
     collectionTiers: mongoose.Schema.Types.Mixed,
     todoTiers: mongoose.Schema.Types.Mixed,
     customAttributes: mongoose.Schema.Types.Mixed,
+    collectionDescription: String,
+    todoDescription: String,
   },
   games: {
     total: Number,
     collectionTiers: mongoose.Schema.Types.Mixed,
     todoTiers: mongoose.Schema.Types.Mixed,
     customAttributes: mongoose.Schema.Types.Mixed,
+    collectionDescription: String,
+    todoDescription: String,
   }
 });
 

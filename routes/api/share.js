@@ -182,9 +182,6 @@ router.get('/user/:username/:mediaType/:id', async (req, res) => {
   try {
     const { username, mediaType, id } = req.params;
     console.log(`[Share] Request for /user/${username}/${mediaType}/${id}`);
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/e5e25c26-3643-4ef5-98e6-b35a84ec0731',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'share.js:184',message:'Route entry - raw params',data:{username,mediaType,id,parsedId:parseInt(id)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4'})}).catch(()=>{});
-    // #endregion
 
     // 1. Find the user (case-insensitive username match)
     const user = await User.findOne({ username: { $regex: new RegExp(`^${escapeRegex(username)}$`, 'i') } });
@@ -192,9 +189,6 @@ router.get('/user/:username/:mediaType/:id', async (req, res) => {
       console.log(`[Share] User not found: ${username}`);
       return res.status(404).json({ error: 'User not found' });
     }
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/e5e25c26-3643-4ef5-98e6-b35a84ec0731',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'share.js:195',message:'User found',data:{userID:user.ID,userUsername:user.username,isPublic:user.isPublicProfile},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
-    // #endregion
 
     // 2. Check if profile is public
     if (!user.isPublicProfile) {
@@ -211,26 +205,13 @@ router.get('/user/:username/:mediaType/:id', async (req, res) => {
       console.log(`[Share] No share link found for userID: ${user.ID}, mediaType: ${mediaType}`);
       return res.status(404).json({ error: 'Shared list not found' });
     }
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/e5e25c26-3643-4ef5-98e6-b35a84ec0731',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'share.js:212',message:'ShareLink found',data:{shareLinkMediaType:shareLink.mediaType,shareConfig:shareLink.shareConfig,urlMediaType:mediaType},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2,H5'})}).catch(()=>{});
-    // #endregion
 
     // 4. Find the specific media item
-    const mediaQuery = { ID: parseInt(id), userID: user.ID, mediaType: shareLink.mediaType };
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/e5e25c26-3643-4ef5-98e6-b35a84ec0731',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'share.js:218',message:'Media query',data:{query:mediaQuery},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H2'})}).catch(()=>{});
-    // #endregion
-    const media = await Media.findOne(mediaQuery);
+    const media = await Media.findOne({ ID: parseInt(id), userID: user.ID, mediaType: shareLink.mediaType });
     if (!media) {
       console.log(`[Share] Media not found: ${id}`);
-      // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/e5e25c26-3643-4ef5-98e6-b35a84ec0731',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'share.js:224',message:'Media NOT found - checking if any media exists',data:{queryUsed:mediaQuery},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
-      // #endregion
       return res.status(404).json({ error: 'Media not found' });
     }
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/e5e25c26-3643-4ef5-98e6-b35a84ec0731',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'share.js:230',message:'Media found',data:{mediaID:media.ID,mediaType:media.mediaType,mediaToDo:media.toDo,mediaTitle:media.title},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H5'})}).catch(()=>{});
-    // #endregion
 
     // 5. Verify the media item is shared (based on shareConfig)
     const { shareConfig } = shareLink;

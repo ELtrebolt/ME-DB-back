@@ -215,11 +215,25 @@ router.put('/newTypes', (req, res) => {
   });
 
 // @route PUT api/user/customizations
-// @description Update user customizations (e.g. homePage)
+// @description Update user customizations (e.g. homePage, list descriptions)
 router.put('/customizations', (req, res) => {
   const updates = {};
-  if (req.body.homePage) {
-    updates['customizations.homePage'] = req.body.homePage;
+  
+  // Handle homePage update (can set or clear)
+  if (req.body.homePage !== undefined) {
+    updates['customizations.homePage'] = req.body.homePage || '';
+  }
+
+  // Handle list description update
+  if (req.body.description !== undefined && req.body.mediaType && req.body.listType) {
+    const { description, mediaType, listType, isNewType } = req.body;
+    const descriptionField = listType === 'to-do' ? 'todoDescription' : 'collectionDescription';
+    
+    if (isNewType) {
+      updates[`newTypes.${mediaType}.${descriptionField}`] = description;
+    } else {
+      updates[`${mediaType}.${descriptionField}`] = description;
+    }
   }
 
   User.findOneAndUpdate(
@@ -229,7 +243,10 @@ router.put('/customizations', (req, res) => {
   )
   .then(user => {
     // Session update is handled by deserializeUser on next request
-    console.log(`Updated customizations: homePage = "${req.body.homePage}"`);
+    const logParts = [];
+    if (req.body.homePage !== undefined) logParts.push(`homePage = "${req.body.homePage || '(cleared)'}"`);
+    if (req.body.description !== undefined) logParts.push(`description for ${req.body.mediaType}/${req.body.listType}`);
+    console.log(`Updated customizations: ${logParts.join(', ')}`);
     res.json({ msg: 'Customizations updated successfully', user: user });
   })
   .catch(err => {
