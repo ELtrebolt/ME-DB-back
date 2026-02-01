@@ -136,10 +136,12 @@ const getSharedData = async (shareLink) => {
   // Also fetch custom tier titles
   const user = await User.findOne({ ID: userID });
   
-  // Extract tier titles
+  // Extract tier titles and descriptions
   let tierTitles = {};
   let collectionTierTitles = {};
   let todoTierTitles = {};
+  let collectionDescription = '';
+  let todoDescription = '';
   
   if (user) {
       // Check if it's a newType (custom type)
@@ -149,6 +151,8 @@ const getSharedData = async (shareLink) => {
       if (typeData) {
           collectionTierTitles = typeData.collectionTiers || {};
           todoTierTitles = typeData.todoTiers || {};
+          collectionDescription = typeData.collectionDescription || '';
+          todoDescription = typeData.todoDescription || '';
           
           // Set the default tierTitles based on what's being shared
           if (shareConfig.collection && !shareConfig.todo) {
@@ -171,7 +175,9 @@ const getSharedData = async (shareLink) => {
     ownerName,
     tierTitles,
     collectionTierTitles,
-    todoTierTitles
+    todoTierTitles,
+    collectionDescription,
+    todoDescription
   };
 };
 
