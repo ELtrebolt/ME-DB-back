@@ -20,12 +20,25 @@ jobs:
       - name: Create PR from dev to master
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          COMMITS_JSON: ${{ toJSON(github.event.commits) }}
+          REPO: ${{ github.repository }}
         run: |
           count=$(gh pr list --base master --head dev --state open --json number -q 'length')
           if [ "$count" = "0" ]; then
+            {
+              echo "**Sync dev → master** — Auto-opened after push to dev. Merge when checks pass."
+              echo ""
+              echo "### Commits in this push"
+              echo ""
+              echo "$COMMITS_JSON" | jq -r --arg repo "$REPO" '.[] | "- \((.id)[0:7]) — \((.message | split("\n")[0] // "")[0:72])  \n  [commit](https://github.com/\($repo)/commit/\(.id))"'
+              echo ""
+            } > pr_body.md
+            PR_TITLE="$(echo "$COMMIT_MSG" | head -n1 | tr '\n' ' ' | cut -c1-72)"
+            [ -z "$PR_TITLE" ] && PR_TITLE="Sync dev → master"
             gh pr create --base master --head dev \
-              --title "Sync dev → master" \
-              --body "Auto-opened PR from **dev** to **master** after push to dev. Merge when checks pass."
+              --title "$PR_TITLE" \
+              --body-file pr_body.md
           else
             echo "An open PR from dev to master already exists."
           fi
