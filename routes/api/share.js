@@ -6,9 +6,7 @@ const crypto = require('crypto');
 const ShareLink = require('../../models/ShareLink');
 const Media = require('../../models/Media');
 const User = require('../../models/User');
-
-// Helper to escape regex special characters for safe case-insensitive matching
-const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const { escapeRegex } = require('../../utils/escapeRegex');
 
 // Authentication middleware (only needed for creating links)
 const requireAuth = (req, res, next) => {

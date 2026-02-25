@@ -3,6 +3,7 @@ const router = express.Router();
 
 const User = require('../../models/User');
 const ShareLink = require('../../models/ShareLink');
+const { validateUsername } = require('../../utils/validateUsername');
 
 // Authentication middleware
 const requireAuth = (req, res, next) => {
@@ -259,22 +260,11 @@ router.put('/customizations', (req, res) => {
 // @description Update username
 router.put('/username', (req, res) => {
   const { username } = req.body;
-  
-  if (!username || username.trim().length === 0) {
-    return res.status(400).json({ error: 'Username cannot be empty' });
+  const validation = validateUsername(username);
+  if (!validation.valid) {
+    return res.status(400).json({ error: validation.error });
   }
-
   const trimmedUsername = username.trim();
-  
-  if (trimmedUsername.length > 30) {
-    return res.status(400).json({ error: 'Username must be 30 characters or less' });
-  }
-
-  // Standard username validation: alphanumeric and underscores only, must start with letter or number
-  const usernameRegex = /^[a-zA-Z0-9][a-zA-Z0-9_]*$/;
-  if (!usernameRegex.test(trimmedUsername)) {
-    return res.status(400).json({ error: 'Username can only contain letters, numbers, and underscores, and must start with a letter or number' });
-  }
 
   // Check if username is already taken (excluding current user)
   User.findOne({ username: trimmedUsername })
