@@ -1,0 +1,31 @@
+name: Create PR dev → master
+
+on:
+  push:
+    branches: [dev]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create PR from dev to master
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          count=$(gh pr list --base master --head dev --state open --json number -q 'length')
+          if [ "$count" = "0" ]; then
+            gh pr create --base master --head dev \
+              --title "Sync dev → master" \
+              --body "Auto-opened PR from **dev** to **master** after push to dev. Merge when checks pass."
+          else
+            echo "An open PR from dev to master already exists."
+          fi
