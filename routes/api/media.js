@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 
-// Load models
 const Media = require('../../models/Media');
 const User = require('../../models/User');
+const { normalizeTag } = require('../../utils/normalizeTag');
+const { formatMediaRow } = require('../../utils/formatMediaRow');
 
 // Authentication middleware
 const requireAuth = (req, res, next) => {
@@ -175,7 +176,7 @@ router.put('/:mediaType/:ID', (req, res) => {
   
   
   if (Array.isArray(req.body.tags)) {
-    req.body.tags = req.body.tags.map((item) => item.toLowerCase().replace(/ /g, '-'));
+    req.body.tags = req.body.tags.map(normalizeTag);
   }
   
   Media.findOneAndUpdate(query, req.body, { new: true })
@@ -346,14 +347,7 @@ router.get('/export', async (req, res) => {
     
     // Add data rows
     allMedia.forEach(media => {
-      const title = media.title ? `"${media.title.replace(/"/g, '""')}"` : '';
-      const tier = media.tier || '';
-      const toDo = media.toDo ? 'Yes' : 'No';
-      const year = media.year ? new Date(media.year).toISOString().split('T')[0] : '';
-      const tags = media.tags && media.tags.length > 0 ? `"${media.tags.join(', ')}"` : '';
-      const description = media.description ? `"${media.description.replace(/"/g, '""')}"` : '';
-      
-      csvContent += `${media.mediaType},${title},${tier},${toDo},${year},${tags},${description}\n`;
+      csvContent += formatMediaRow(media) + '\n';
     });
     
     res.json({
