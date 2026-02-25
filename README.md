@@ -2,8 +2,6 @@
 
 REST API for the ME-DB media-collection app. Handles auth (Google OAuth), media CRUD, user/profile, stats, share links, and friends. Session store in MongoDB; CORS and credentials configured for a separate frontend.
 
-**Live:** [me-db-server.onrender.com](https://me-db-server.onrender.com)
-
 ---
 
 ## Table of Contents
