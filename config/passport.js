@@ -4,6 +4,7 @@ const constants = require('./constants');
 
 // Load User model
 const User = require('../models/User');
+const generateUniqueUsername = require('../utils/generateUsername');
 
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
@@ -11,9 +12,9 @@ passport.use(new GoogleStrategy({
     callbackURL: constants['SERVER_CALLBACK_URL'] || 'http://localhost:8082/auth/google/callback'
   },
 
-  function (accessToken, refreshToken, profile, done) {
-    User.findOne({ ID: profile.id })
-      .then(user => {
+  async function (accessToken, refreshToken, profile, done) {
+    try {
+      const user = await User.findOne({ ID: profile.id });
       if (user) {
         const now = new Date();
         const updates = { lastActiveAt: now };
@@ -23,12 +24,11 @@ passport.use(new GoogleStrategy({
         user.lastActiveAt = now;
         if (updates.email) user.email = updates.email;
         return done(null, user);
-      } else {
-        // Generate random username like "User12345"
-        const randomNumber = Math.floor(Math.random() * 90000) + 10000;
-        const autoUsername = `User${randomNumber}`;
-        
-        const newUser = new User({
+      }
+
+      const autoUsername = await generateUniqueUsername(profile.displayName);
+
+      const newUser = new User({
           ID: profile.id,
           displayName: profile.displayName,
           username: autoUsername,
@@ -112,13 +112,11 @@ passport.use(new GoogleStrategy({
             }
           }
         });
-        newUser.save();
+        await newUser.save();
         return done(null, newUser);
-      }
-    })
-    .catch(err => {
-      return done(err, false);
-    });  
+    } catch (err) {
+      return done(err, null);
+    }
   }
 ));
 
