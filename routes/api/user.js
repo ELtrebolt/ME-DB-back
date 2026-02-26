@@ -5,16 +5,7 @@ const User = require('../../models/User');
 const ShareLink = require('../../models/ShareLink');
 const { validateUsername } = require('../../utils/validateUsername');
 
-// Authentication middleware
-const requireAuth = (req, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({ 
-      success: false, 
-      message: "Authentication required" 
-    });
-  }
-  next();
-};
+const { requireAuth } = require('../../middleware/auth');
 
 // @route GET api/user/public/:username
 // @description Get public user profile info and shared lists
