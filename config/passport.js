@@ -15,6 +15,13 @@ passport.use(new GoogleStrategy({
     User.findOne({ ID: profile.id })
       .then(user => {
       if (user) {
+        const now = new Date();
+        const updates = { lastActiveAt: now };
+        const email = profile.emails?.[0]?.value;
+        if (email && !user.email) updates.email = email;
+        User.findOneAndUpdate({ ID: profile.id }, { $set: updates }).catch(() => {});
+        user.lastActiveAt = now;
+        if (updates.email) user.email = updates.email;
         return done(null, user);
       } else {
         // Generate random username like "User12345"
@@ -25,7 +32,7 @@ passport.use(new GoogleStrategy({
           ID: profile.id,
           displayName: profile.displayName,
           username: autoUsername,
-          // email: profile.emails[0].value,
+          email: profile.emails?.[0]?.value,
           profilePic: profile.photos[0].value,
           newTypes: new Map(),
           anime: {

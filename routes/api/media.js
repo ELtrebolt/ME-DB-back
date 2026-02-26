@@ -6,16 +6,7 @@ const User = require('../../models/User');
 const { normalizeTag } = require('../../utils/normalizeTag');
 const { formatMediaRow } = require('../../utils/formatMediaRow');
 
-// Authentication middleware
-const requireAuth = (req, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({ 
-      success: false, 
-      message: "Authentication required" 
-    });
-  }
-  next();
-};
+const { requireAuth } = require('../../middleware/auth');
 
 // Apply authentication middleware to all routes
 router.use(requireAuth);

@@ -8,16 +8,7 @@ const Media = require('../../models/Media');
 const User = require('../../models/User');
 const { escapeRegex } = require('../../utils/escapeRegex');
 
-// Authentication middleware (only needed for creating links)
-const requireAuth = (req, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({ 
-      success: false, 
-      message: "Authentication required" 
-    });
-  }
-  next();
-};
+const { requireAuth } = require('../../middleware/auth');
 
 // @route POST api/share
 // @description Generate or retrieve existing share link

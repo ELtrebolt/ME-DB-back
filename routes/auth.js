@@ -50,7 +50,7 @@ router.get("/login/success", (req, res) => {
 
 router.get("/google", (req, res, next) => {
   const prompt = req.query.prompt;
-  const options = { scope: ["profile"] };
+  const options = { scope: ["profile", "email"] };
   if (prompt) options.prompt = prompt;
   return passport.authenticate("google", options)(req, res, next);
 });

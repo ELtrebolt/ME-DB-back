@@ -6,6 +6,12 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  email: {
+    type: String
+  },
+  lastActiveAt: {
+    type: Date
+  },
   displayName: {
     type: String,
     required: true
@@ -89,6 +95,6 @@ const UserSchema = new mongoose.Schema({
     collectionDescription: String,
     todoDescription: String,
   }
-});
+}, { timestamps: true });
 
 module.exports = User = mongoose.model('User', UserSchema);
