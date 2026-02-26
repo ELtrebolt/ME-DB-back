@@ -5,7 +5,7 @@ on:
     branches: [dev]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
@@ -39,6 +39,7 @@ jobs:
             gh pr create --base master --head dev \
               --title "$PR_TITLE" \
               --body-file pr_body.md
+            gh pr merge --auto --merge dev
           else
             echo "An open PR from dev to master already exists."
           fi
