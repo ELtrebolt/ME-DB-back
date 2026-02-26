@@ -14,10 +14,15 @@ const requireAuth = (req, res, next) => {
   const lastActive = req.user.lastActiveAt;
   if (!lastActive || (Date.now() - new Date(lastActive).getTime()) > FIVE_MINUTES_MS) {
     const now = new Date();
-    User.findOneAndUpdate(
-      { ID: req.user.ID },
-      { $set: { lastActiveAt: now } }
-    ).catch(() => {});
+    try {
+      const result = User.findOneAndUpdate(
+        { ID: req.user.ID },
+        { $set: { lastActiveAt: now } }
+      );
+      if (result && typeof result.catch === 'function') result.catch(() => {});
+    } catch (e) {
+      // Fire-and-forget: silently ignore if update fails
+    }
     req.user.lastActiveAt = now;
   }
 
