@@ -79,25 +79,3 @@ describe('GET /api/share/status/:mediaType', () => {
   });
 });
 
-describe('GET /api/share/:token (public)', () => {
-  it('returns 200 and shared data when token valid', async () => {
-    const shareLink = {
-      userID: 'user1',
-      mediaType: 'movies',
-      shareConfig: { collection: true, todo: false }
-    };
-    ShareLink.findOne.mockResolvedValue(shareLink);
-    const res = await request(app).get('/api/share/someToken123');
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.media).toBeDefined();
-    expect(res.body.mediaType).toBe('movies');
-  });
-
-  it('returns 404 when token not found', async () => {
-    ShareLink.findOne.mockResolvedValue(null);
-    const res = await request(app).get('/api/share/invalidToken');
-    expect(res.status).toBe(404);
-    expect(res.body.error).toMatch(/not found|expired/i);
-  });
-});

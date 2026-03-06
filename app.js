@@ -5,6 +5,8 @@ const session = require("express-session");
 const MongoStore = require("connect-mongo");
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 const passportSetup = require("./config/passport");  // needed otherwise Unknown authentication strategy "google"
 const passport = require("passport");
 const mongoose = require("mongoose");
@@ -23,6 +25,15 @@ connectDB();
 // For Cross Domain requests (Localhost 3000 & 8082 or Vercel client & Render server or example.com & api.example.com)
 // Setup CORS before Cookie-Session, Routes and Passport Initialization
 app.set('trust proxy', 1) 
+app.use(helmet());
+
+const publicLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 app.use(
     cors({
         origin: constants['CLIENT_URL'] || 'http://localhost:3000',    // access-control-allow-origin
@@ -51,10 +62,13 @@ if(process.env.STATUS === 'local' || !process.env.STATUS) {
 }
 else if(process.env.STATUS === 'deploy')
 {
+    if (!process.env.SESSION_SECRET) {
+        throw new Error('SESSION_SECRET env var is required in deploy mode');
+    }
     app.use(
         session({ 
             name: "session",
-            secret: process.env.SESSION_SECRET || "lama",
+            secret: process.env.SESSION_SECRET,
             resave: false,
             saveUninitialized: false,
             store: MongoStore.create({
@@ -99,7 +113,7 @@ app.use('/api/stats', statsApi);
 app.use('/api/share', shareApi);
 app.use('/api/friends', friendsApi);
 app.use('/api/admin', adminApi);
-app.use('/auth', authRoute);
+app.use('/auth', publicLimiter, authRoute);
 
 // Global error handler
 app.use((err, req, res, next) => {
