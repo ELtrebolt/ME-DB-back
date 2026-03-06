@@ -5,11 +5,19 @@ const User = require('../../models/User');
 const ShareLink = require('../../models/ShareLink');
 const { validateUsername } = require('../../utils/validateUsername');
 
+const rateLimit = require('express-rate-limit');
 const { requireAuth } = require('../../middleware/auth');
+
+const publicProfileLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // @route GET api/user/public/:username
 // @description Get public user profile info and shared lists
-router.get('/public/:username', async (req, res) => {
+router.get('/public/:username', publicProfileLimiter, async (req, res) => {
   try {
     const { username } = req.params;
     const user = await User.findOne({ username });
@@ -79,7 +87,6 @@ router.get('/public/:username', async (req, res) => {
     
     const sharedLists = allLists.map(link => ({
       mediaType: link.mediaType,
-      token: link.token,
       shareConfig: link.shareConfig
     }));
 

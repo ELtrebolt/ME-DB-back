@@ -8,7 +8,15 @@ const Media = require('../../models/Media');
 const User = require('../../models/User');
 const { escapeRegex } = require('../../utils/escapeRegex');
 
+const rateLimit = require('express-rate-limit');
 const { requireAuth } = require('../../middleware/auth');
+
+const publicShareLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // @route POST api/share
 // @description Generate or retrieve existing share link
@@ -173,7 +181,7 @@ const getSharedData = async (shareLink) => {
 // @route GET api/share/user/:username/:mediaType/:id
 // @description Get single shared media item by username, mediaType, and ID
 // @access Public
-router.get('/user/:username/:mediaType/:id', async (req, res) => {
+router.get('/user/:username/:mediaType/:id', publicShareLimiter, async (req, res) => {
   try {
     const { username, mediaType, id } = req.params;
     console.log(`[Share] Request for /user/${username}/${mediaType}/${id}`);
@@ -249,7 +257,7 @@ router.get('/user/:username/:mediaType/:id', async (req, res) => {
 // @route GET api/share/user/:username/:mediaType
 // @description Get shared data by username and mediaType
 // @access Public
-router.get('/user/:username/:mediaType', async (req, res) => {
+router.get('/user/:username/:mediaType', publicShareLimiter, async (req, res) => {
   try {
     const { username, mediaType } = req.params;
     console.log(`[Share] Request for /user/${username}/${mediaType}`);
@@ -292,31 +300,6 @@ router.get('/user/:username/:mediaType', async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching shared user data:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// @route GET api/share/:token
-// @description Get shared data
-// @access Public
-router.get('/:token', async (req, res) => {
-  try {
-    const { token } = req.params;
-
-    // Find the share link
-    const shareLink = await ShareLink.findOne({ token });
-    if (!shareLink) {
-      return res.status(404).json({ error: 'Share link not found or expired' });
-    }
-
-    const data = await getSharedData(shareLink);
-    res.json({
-      success: true,
-      ...data
-    });
-
-  } catch (error) {
-    console.error('Error fetching shared data:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
