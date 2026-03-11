@@ -19,6 +19,7 @@ const requireAuth = (req, res, next) => {
         { ID: req.user.ID },
         { $set: { lastActiveAt: now } }
       );
+      // Fire-and-forget: do not block request if lastActiveAt update fails.
       if (result && typeof result.catch === 'function') result.catch(() => {});
     } catch (e) {
       // Fire-and-forget: do not block the request if lastActiveAt update fails; auth still proceeds.

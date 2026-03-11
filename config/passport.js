@@ -20,6 +20,7 @@ passport.use(new GoogleStrategy({
         const updates = { lastActiveAt: now };
         const email = profile.emails?.[0]?.value;
         if (email && !user.email) updates.email = email;
+        // Fire-and-forget: do not block login if profile update fails.
         User.findOneAndUpdate({ ID: profile.id }, { $set: updates }).catch(() => {});
         user.lastActiveAt = now;
         if (updates.email) user.email = updates.email;
