@@ -9,7 +9,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
   },
-  "author": "",
+  "author": "ELtrebolt",
   "license": "ISC",
   "engines": {
     "node": "20.x"
@@ -41,5 +41,5 @@
     "url": "https://github.com/ELtrebolt/ME-DB-back/issues"
   },
   "homepage": "https://me-db-server.onrender.com",
-  "description": ""
+  "description": "ME-DB backend API: auth, media CRUD, stats, sharing, friends."
 }

@@ -77,12 +77,12 @@ router.get(
 router.get("/logout", (req,res) => {
     req.logout(function(err) {
         if (err) { 
-            console.log('Logout error:', err); 
+            console.error('Logout error:', err); 
             return res.redirect(CLIENT_URL);
         }
         req.session.destroy((err) => {
             if (err) {
-                console.log('Session destroy error:', err);
+                console.error('Session destroy error:', err);
             }
             res.clearCookie('session'); // Clear the session cookie
             res.redirect(CLIENT_URL);

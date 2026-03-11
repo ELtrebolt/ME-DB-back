@@ -30,13 +30,8 @@ router.get('/', async (req, res) => {
       customTypes = Object.keys(user.newTypes);
     }
     
-    console.log('User ID:', userID);
-    console.log('User newTypes:', user.newTypes);
-    console.log('Custom types:', customTypes);
-    
     // Get all media for the user
     const allMedia = await Media.find({ userID });
-    console.log('Total media found:', allMedia.length);
     
     // Calculate total counts
     const totalRecords = allMedia.length;

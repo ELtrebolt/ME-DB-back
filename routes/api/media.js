@@ -13,7 +13,7 @@ router.use(requireAuth);
 
 // @route GET api/media
 // @description Get all media
-// @access Public
+// @access Private
 router.get('/:mediaType/:group', (req, res) => {
   // if group is NotaNumber = collection or to-do or tags
   if(isNaN(req.params.group))
@@ -75,7 +75,7 @@ router.get('/:mediaType/:group', (req, res) => {
 
 // @route POST api/media
 // @description add/save media
-// @access Public
+// @access Private
 router.post('/', (req, res) => {
   const userID = req.user.ID;
   const media = req.body.media
@@ -132,7 +132,6 @@ router.post('/', (req, res) => {
              return Media.create({ ...media, ...extra, orderIndex: nextOrder });
            })
            .then(media => {
-             console.log("Media created:", media.title, "ID:", newTotal);
              res.json({ msg: 'Media added successfully!', ID: newTotal })
            })
            .catch(error => {
@@ -150,14 +149,14 @@ router.post('/', (req, res) => {
       });
   })
   .catch(err => {
-    console.log('1st Layer', err)
-    res.status(400).json({ error: err })
+    console.error('Error in POST /api/media:', err)
+    res.status(400).json({ error: 'Unable to Create Media' })
   });
 });
 
 // @route PUT api/media/:id
 // @description Update media
-// @access Public
+// @access Private
 router.put('/:mediaType/:ID', (req, res) => {
   const query = {
     userID: req.user.ID,
@@ -166,18 +165,18 @@ router.put('/:mediaType/:ID', (req, res) => {
   };
   
   
-  if (Array.isArray(req.body.tags)) {
-    req.body.tags = req.body.tags.map(normalizeTag);
-  }
-  
-  Media.findOneAndUpdate(query, req.body, { new: true })
+  const { title, tier, toDo, year, tags, description, orderIndex } = req.body;
+  const updates = {};
+  if (title !== undefined) updates.title = title;
+  if (tier !== undefined) updates.tier = tier;
+  if (toDo !== undefined) updates.toDo = toDo;
+  if (year !== undefined) updates.year = year;
+  if (tags !== undefined) updates.tags = Array.isArray(tags) ? tags.map(normalizeTag) : tags;
+  if (description !== undefined) updates.description = description;
+  if (orderIndex !== undefined) updates.orderIndex = orderIndex;
+
+  Media.findOneAndUpdate(query, updates, { new: true })
     .then(media => {
-      // Log tier changes concisely
-      if (req.body.tier) {
-        console.log(`Tier updated: "${media.title}" → ${req.body.tier}`);
-      } else {
-        console.log(`Media updated: "${media.title}"`);
-      }
       res.json({ msg: 'Updated successfully', media: media });
     })
     .catch(err => {
@@ -214,7 +213,7 @@ router.put('/:mediaType/:group/:tier/reorder', async (req, res) => {
 
 // @route GET api/media/:id
 // @description Delete media by id
-// @access Public
+// @access Private
 router.delete('/:mediaType/:ID', (req, res) => {
   const query = {
     userID: req.user.ID,
@@ -238,11 +237,9 @@ router.delete('/:mediaType/:ID', (req, res) => {
               { $inc: { [`${req.params.mediaType}.total`]: -1 } }, 
               { new: true }
             )
-            .then(updatedUser => {
-              console.log(`${req.params.mediaType} Count updated (decremented):`, updatedUser[req.params.mediaType].total);
-            })
+            .then(() => {})
             .catch((err) => {
-              console.log('Error updating count in DELETE api/media');
+              console.error('Error updating count in DELETE api/media:', err);
             });
           }
       } 
@@ -257,16 +254,13 @@ router.delete('/:mediaType/:ID', (req, res) => {
                 { $inc: { [`newTypes.${req.params.mediaType}.total`]: -1 } },
                 { new: true }
               )
-              .then(updatedUser => {
-                  const newTotal = updatedUser.newTypes.get ? updatedUser.newTypes.get(req.params.mediaType).total : updatedUser.newTypes[req.params.mediaType].total;
-                  console.log(`${req.params.mediaType} Count updated (decremented):`, newTotal);
-              })
+              .then(() => {})
               .catch(err => console.error("Error decrementing custom type count:", err));
           }
       }
     })
     .catch((err) => {
-      console.log('Error finding user in DELETE api/media', err);
+      console.error('Error finding user in DELETE api/media:', err);
     });
 
   Media.findOneAndDelete(query)
@@ -274,11 +268,10 @@ router.delete('/:mediaType/:ID', (req, res) => {
     if (!media) {
       return res.status(404).json({ error: 'No such a media' });
     }
-    console.log("Media deleted:", media.title);
     res.json({ msg: 'Media entry deleted successfully', toDo: media.toDo });
   })
   .catch(err => {
-    console.log('Error deleting media:', err);
+    console.error('Error deleting media:', err);
     res.status(500).json({ error: 'Error deleting media' });
   });
 });
@@ -294,7 +287,6 @@ router.delete('/:mediaType', (req, res) => {
   Media.deleteMany(query)
   .then(result => {
     deletedCount = result.deletedCount
-    console.log(`All ${mediaType} records deleted: ${deletedCount}`);
     User.findOneAndUpdate(
       { ID: req.user.ID }, 
       { $unset: { [`newTypes.${mediaType}`]: 1 } },
@@ -303,7 +295,6 @@ router.delete('/:mediaType', (req, res) => {
     .then(updatedUser => {
       req.session.passport.user.newTypes = updatedUser.newTypes
       const msg = `User.newTypes.${mediaType} deleted`
-      console.log(msg);
       res.json({ msg: msg});
     })
     .catch(error => {

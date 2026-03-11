@@ -21,7 +21,7 @@ const requireAuth = (req, res, next) => {
       );
       if (result && typeof result.catch === 'function') result.catch(() => {});
     } catch (e) {
-      // Fire-and-forget: silently ignore if update fails
+      // Fire-and-forget: do not block the request if lastActiveAt update fails; auth still proceeds.
     }
     req.user.lastActiveAt = now;
   }
