@@ -140,6 +140,11 @@ router.put('/:mediaType/:group/:tier', (req, res) => {
     const group = req.params.group
     const tier = req.params.tier
     const mediaTypeLoc = req.body.newType ? 'newTypes.' : ''
+
+    const newTitle = req.body.newTitle;
+    if (!newTitle || typeof newTitle !== 'string' || newTitle.trim().length === 0 || newTitle.length > 50) {
+      return res.status(400).json({ error: 'Tier title must be between 1 and 50 characters' });
+    }
     
     User.findOneAndUpdate(
         { ID: req.user.ID }, 
@@ -161,7 +166,6 @@ router.put('/:mediaType/:group/:tier', (req, res) => {
             }
             req.session.passport.user[mediaType][`${group}Tiers`][tier] = req.body.newTitle;
           }
-          console.log(`Updated tier: ${mediaType} ${group} ${tier} = "${req.body.newTitle}"`);
           res.json({ msg: 'User Tier changed successfully!' })
         } catch (sessionError) {
           console.error('Session update error:', sessionError);
@@ -175,42 +179,53 @@ router.put('/:mediaType/:group/:tier', (req, res) => {
       })
   });
 
-router.put('/newTypes', (req, res) => {
-    const newTypeFields = {
-      total: 0,
-      collectionTiers: {
-        S: "S Tier",
-        A: "A Tier",
-        B: "B Tier",
-        C: "C Tier",
-        D: "D Tier",
-        F: "F Tier"
-      },
-      todoTiers: {
-        S: "S Tier",
-        A: "A Tier",
-        B: "B Tier",
-        C: "C Tier",
-        D: "D Tier",
-        F: "F Tier"
-      }
+router.put('/newTypes', async (req, res) => {
+    const newType = req.body.newType;
+    if (!newType || typeof newType !== 'string' || newType.trim().length === 0 || newType.length > 30) {
+      return res.status(400).json({ error: 'Type name must be between 1 and 30 characters' });
     }
-    const newType = req.body.newType
-    User.findOneAndUpdate(
-        { ID: req.user.ID }, 
-        { $set: { [`newTypes.${newType}`] : newTypeFields } }, 
+
+    try {
+      const user = await User.findOne({ ID: req.user.ID });
+      const currentCount = user && user.newTypes
+        ? (user.newTypes.size !== undefined ? user.newTypes.size : Object.keys(user.newTypes).length)
+        : 0;
+      if (currentCount >= 8) {
+        return res.status(400).json({ error: 'Maximum custom types reached (8)' });
+      }
+
+      const newTypeFields = {
+        total: 0,
+        collectionTiers: {
+          S: "S Tier",
+          A: "A Tier",
+          B: "B Tier",
+          C: "C Tier",
+          D: "D Tier",
+          F: "F Tier"
+        },
+        todoTiers: {
+          S: "S Tier",
+          A: "A Tier",
+          B: "B Tier",
+          C: "C Tier",
+          D: "D Tier",
+          F: "F Tier"
+        }
+      };
+
+      const updatedUser = await User.findOneAndUpdate(
+        { ID: req.user.ID },
+        { $set: { [`newTypes.${newType}`]: newTypeFields } },
         { new: true }
-      )
-      .then(updatedUser => {
-        const newTypes = [...updatedUser.newTypes.keys()]
-        req.session.passport.user.newTypes = updatedUser.newTypes
-        console.log('Created new media type:', newType);
-        res.json({ msg: 'New Type Created successfully!', newTypes:newTypes })
-      })
-      .catch(error => {
-        console.error('Error adding new type:', error);
-        res.status(400).json({ error: 'Unable to Add New Type' })
-      })
+      );
+      const newTypes = [...updatedUser.newTypes.keys()];
+      req.session.passport.user.newTypes = updatedUser.newTypes;
+      res.json({ msg: 'New Type Created successfully!', newTypes });
+    } catch (error) {
+      console.error('Error adding new type:', error);
+      res.status(400).json({ error: 'Unable to Add New Type' });
+    }
   });
 
 // @route PUT api/user/customizations
@@ -242,10 +257,6 @@ router.put('/customizations', (req, res) => {
   )
   .then(user => {
     // Session update is handled by deserializeUser on next request
-    const logParts = [];
-    if (req.body.homePage !== undefined) logParts.push(`homePage = "${req.body.homePage || '(cleared)'}"`);
-    if (req.body.description !== undefined) logParts.push(`description for ${req.body.mediaType}/${req.body.listType}`);
-    console.log(`Updated customizations: ${logParts.join(', ')}`);
     res.json({ msg: 'Customizations updated successfully', user: user });
   })
   .catch(err => {
@@ -282,7 +293,6 @@ router.put('/username', (req, res) => {
         if (req.session.passport && req.session.passport.user) {
           req.session.passport.user.username = trimmedUsername;
         }
-        console.log(`Updated username to: "${trimmedUsername}"`);
         res.json({ msg: 'Username updated successfully', username: user.username });
       })
       .catch(err => {

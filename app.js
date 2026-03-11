@@ -5,6 +5,7 @@ const session = require("express-session");
 const MongoStore = require("connect-mongo");
 const express = require("express");
 const cors = require("cors");
+const crypto = require("crypto");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const passportSetup = require("./config/passport");  // needed otherwise Unknown authentication strategy "google"
@@ -45,7 +46,8 @@ if(process.env.STATUS === 'local' || !process.env.STATUS) {
     app.use(
         session({ 
             name: "session",
-            secret: "lama", 
+            // Dev fallback: random per process; set SESSION_SECRET if you want stable sessions across restarts.
+            secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
             resave: false,
             saveUninitialized: false,
             store: MongoStore.create({

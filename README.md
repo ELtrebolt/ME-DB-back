@@ -62,7 +62,13 @@ ME-DB-back/
 
 ## Run Locally
 
-**Prerequisites:** Node 20.x, MongoDB (e.g. local or Atlas). Set `MONGODB_URI` and ensure `CLIENT_URL` in `config/constants.js` (or env) points to the frontend (e.g. `http://localhost:3000`).
+**Prerequisites:** Node 20.x, MongoDB (e.g. local or Atlas).
+
+**Required env vars:**
+- `MONGODB_URI`: MongoDB connection string
+- `SESSION_SECRET`: long random string used to sign session cookies (required for deploy; recommended for local)
+
+Ensure `CLIENT_URL` in `config/constants.js` (or env) points to the frontend (e.g. `http://localhost:3000`).
 
 ```bash
 npm install

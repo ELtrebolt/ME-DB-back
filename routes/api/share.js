@@ -184,18 +184,15 @@ const getSharedData = async (shareLink) => {
 router.get('/user/:username/:mediaType/:id', publicShareLimiter, async (req, res) => {
   try {
     const { username, mediaType, id } = req.params;
-    console.log(`[Share] Request for /user/${username}/${mediaType}/${id}`);
 
     // 1. Find the user (case-insensitive username match)
     const user = await User.findOne({ username: { $regex: new RegExp(`^${escapeRegex(username)}$`, 'i') } });
     if (!user) {
-      console.log(`[Share] User not found: ${username}`);
       return res.status(404).json({ error: 'User not found' });
     }
 
     // 2. Check if profile is public
     if (!user.isPublicProfile) {
-      console.log(`[Share] Profile is private`);
       return res.status(403).json({ error: 'This profile is private' });
     }
 
@@ -205,14 +202,12 @@ router.get('/user/:username/:mediaType/:id', publicShareLimiter, async (req, res
       mediaType: { $regex: new RegExp(`^${escapeRegex(mediaType)}$`, 'i') } 
     });
     if (!shareLink) {
-      console.log(`[Share] No share link found for userID: ${user.ID}, mediaType: ${mediaType}`);
       return res.status(404).json({ error: 'Shared list not found' });
     }
 
     // 4. Find the specific media item
     const media = await Media.findOne({ ID: parseInt(id), userID: user.ID, mediaType: shareLink.mediaType });
     if (!media) {
-      console.log(`[Share] Media not found: ${id}`);
       return res.status(404).json({ error: 'Media not found' });
     }
 
@@ -260,19 +255,15 @@ router.get('/user/:username/:mediaType/:id', publicShareLimiter, async (req, res
 router.get('/user/:username/:mediaType', publicShareLimiter, async (req, res) => {
   try {
     const { username, mediaType } = req.params;
-    console.log(`[Share] Request for /user/${username}/${mediaType}`);
 
     // 1. Find the user (case-insensitive username match)
     const user = await User.findOne({ username: { $regex: new RegExp(`^${escapeRegex(username)}$`, 'i') } });
     if (!user) {
-      console.log(`[Share] User not found: ${username}`);
       return res.status(404).json({ error: 'User not found' });
     }
-    console.log(`[Share] Found user: ${user.username}, ID: ${user.ID}, isPublic: ${user.isPublicProfile}`);
 
     // 2. Check if profile is public
     if (!user.isPublicProfile) {
-      console.log(`[Share] Profile is private`);
       return res.status(403).json({ error: 'This profile is private' });
     }
 
@@ -282,17 +273,11 @@ router.get('/user/:username/:mediaType', publicShareLimiter, async (req, res) =>
       mediaType: { $regex: new RegExp(`^${escapeRegex(mediaType)}$`, 'i') } 
     });
     if (!shareLink) {
-      console.log(`[Share] No share link found for userID: ${user.ID}, mediaType: ${mediaType}`);
-      // List all share links for this user
-      const allLinks = await ShareLink.find({ userID: user.ID });
-      console.log(`[Share] All share links for user:`, allLinks.map(l => l.mediaType));
       return res.status(404).json({ error: 'Shared list not found' });
     }
-    console.log(`[Share] Found share link for mediaType: ${shareLink.mediaType}`);
 
     // 4. Get and return data
     const data = await getSharedData(shareLink);
-    console.log(`[Share] Returning ${data.media?.length || 0} media items`);
     res.json({
       success: true,
       ...data
