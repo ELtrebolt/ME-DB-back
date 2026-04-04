@@ -51,7 +51,8 @@ if(process.env.STATUS === 'local' || !process.env.STATUS) {
             resave: false,
             saveUninitialized: false,
             store: MongoStore.create({
-                client: mongoose.connection.getClient(),  // Reuse existing mongoose connection
+                // Own MongoClient via URI avoids sync getClient() before connectDB finishes, and getClient() being undefined briefly after connect.
+                mongoUrl: process.env.MONGODB_URI,
                 touchAfter: 24 * 3600  // Lazy session update: only update once per 24h
             }),
             cookie: {
@@ -74,7 +75,7 @@ else if(process.env.STATUS === 'deploy')
             resave: false,
             saveUninitialized: false,
             store: MongoStore.create({
-                client: mongoose.connection.getClient(),  // Reuse existing mongoose connection
+                mongoUrl: process.env.MONGODB_URI,
                 touchAfter: 24 * 3600  // Lazy session update: only update once per 24h
             }),
             proxy: true,  // Trust the reverse proxy
