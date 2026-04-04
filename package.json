@@ -14,6 +14,21 @@
   "engines": {
     "node": "20.x"
   },
+  "overrides": {
+    "picomatch": ">=2.3.2",
+    "anymatch": {
+      "picomatch": ">=2.3.2"
+    },
+    "jest-util": {
+      "picomatch": ">=4.0.4"
+    },
+    "micromatch": {
+      "picomatch": ">=2.3.2"
+    },
+    "path-to-regexp": "0.1.13",
+    "yauzl": ">=3.2.1",
+    "brace-expansion": ">=5.0.5"
+  },
   "dependencies": {
     "connect-mongo": "^5.1.0",
     "cors": "^2.8.5",
