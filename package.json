@@ -31,21 +31,21 @@
   },
   "dependencies": {
     "connect-mongo": "^5.1.0",
-    "cors": "^2.8.5",
+    "cors": "^2.8.6",
     "express": "^4.19.2",
-    "express-rate-limit": "^8.3.0",
-    "express-session": "^1.18.0",
+    "express-rate-limit": "^8.3.2",
+    "express-session": "^1.19.0",
     "helmet": "^8.1.0",
-    "mongoose": "^8.3.2",
+    "mongoose": "^8.23.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "qs": "^6.14.1"
   },
   "devDependencies": {
     "dotenv": "^16.4.5",
-    "jest": "^30.2.0",
+    "jest": "^30.3.0",
     "mongodb-memory-server": "^10.4.3",
-    "nodemon": "^3.1.0",
+    "nodemon": "^3.1.14",
     "supertest": "^7.2.2"
   },
   "repository": {
