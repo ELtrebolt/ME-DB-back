@@ -8,6 +8,7 @@ const userRouter = require('../routes/api/user');
 const statsRouter = require('../routes/api/stats');
 const shareRouter = require('../routes/api/share');
 const friendsRouter = require('../routes/api/friends');
+const adminRouter = require('../routes/api/admin');
 const authRouter = require('../routes/auth');
 
 const app = express();
@@ -19,7 +20,12 @@ app.use((req, res, next) => {
   req.session.destroy = req.session.destroy || ((cb) => cb && cb(null));
   const id = req.get('X-Test-User-ID');
   if (id) {
-    req.user = { ID: id, username: req.get('X-Test-Username') || 'testuser' };
+    const email = req.get('X-Test-User-Email');
+    req.user = {
+      ID: id,
+      username: req.get('X-Test-Username') || 'testuser',
+      ...(email ? { email } : {}),
+    };
     req.session.passport = req.session.passport || {};
     req.session.passport.user = req.user;
   }
@@ -31,6 +37,7 @@ app.use('/api/user', userRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/share', shareRouter);
 app.use('/api/friends', friendsRouter);
+app.use('/api/admin', adminRouter);
 app.use('/auth', authRouter);
 
 app.use((err, req, res, next) => {

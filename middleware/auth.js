@@ -30,10 +30,11 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
+const getAdminEmails = () =>
+  (process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim()).filter(Boolean);
 
 const adminAuth = (req, res, next) => {
-  if (!req.user || !ADMIN_EMAILS.includes(req.user.email)) {
+  if (!req.user || !getAdminEmails().includes(req.user.email)) {
     return res.status(403).json({ success: false, message: "Forbidden" });
   }
   next();
