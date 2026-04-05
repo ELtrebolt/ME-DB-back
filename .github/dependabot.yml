@@ -1,0 +1,28 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    target-branch: dev
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+    groups:
+      non-major:
+        patterns:
+          - "*"
+        update-types:
+          - patch
+          - minor
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    target-branch: dev
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
