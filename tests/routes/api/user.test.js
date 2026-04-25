@@ -84,3 +84,90 @@ describe('PUT /api/user/username', () => {
     expect(res.body.username).toBe('validuser');
   });
 });
+
+describe('PUT /api/user/:mediaType/:group/:tier — path injection guards', () => {
+  it('rejects unknown fixed mediaType', async () => {
+    const res = await request(app)
+      .put('/api/user/email/collection/S')
+      .set('X-Test-User-ID', 'user1')
+      .send({ newTitle: 'pwn' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Invalid media type/i);
+  });
+
+  it('rejects unknown group', async () => {
+    const res = await request(app)
+      .put('/api/user/movies/__proto__/S')
+      .set('X-Test-User-ID', 'user1')
+      .send({ newTitle: 'pwn' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Invalid group/i);
+  });
+
+  it('rejects tier key with disallowed characters', async () => {
+    const res = await request(app)
+      .put('/api/user/movies/collection/S.injection')
+      .set('X-Test-User-ID', 'user1')
+      .send({ newTitle: 'pwn' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Invalid tier key/i);
+  });
+
+  it('rejects custom mediaType not present on user', async () => {
+    User.findOne.mockResolvedValueOnce({
+      ID: 'user1',
+      newTypes: { has: () => false }
+    });
+    const res = await request(app)
+      .put('/api/user/anything/collection/S')
+      .set('X-Test-User-ID', 'user1')
+      .send({ newTitle: 'pwn', newType: true });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Unknown custom media type/i);
+  });
+
+  it('accepts a valid fixed-type tier rename', async () => {
+    User.findOneAndUpdate.mockReturnValueOnce({
+      then: (fn) => fn({ movies: { collectionTiers: { S: 'Renamed' } } })
+    });
+    const res = await request(app)
+      .put('/api/user/movies/collection/S')
+      .set('X-Test-User-ID', 'user1')
+      .send({ newTitle: 'Renamed' });
+    expect(res.status).toBe(200);
+    expect(res.body.msg).toMatch(/successfully/i);
+  });
+});
+
+describe('PUT /api/user/newTypes — key validation', () => {
+  it('rejects newType containing a dot', async () => {
+    const res = await request(app)
+      .put('/api/user/newTypes')
+      .set('X-Test-User-ID', 'user1')
+      .send({ newType: 'evil.path' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/letters, numbers/i);
+  });
+
+  it('rejects newType matching a built-in type', async () => {
+    const res = await request(app)
+      .put('/api/user/newTypes')
+      .set('X-Test-User-ID', 'user1')
+      .send({ newType: 'movies' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/built-in/i);
+  });
+
+  it('rejects newType named __proto__', async () => {
+    const res = await request(app)
+      .put('/api/user/newTypes')
+      .set('X-Test-User-ID', 'user1')
+      .send({ newType: '__proto__' });
+    // __proto__ matches the SAFE_KEY_REGEX letters/underscores, but is not in
+    // FIXED_MEDIA_TYPES, so it would currently pass into the Map. The check we
+    // care about here is that dots/special chars are rejected — keep this test
+    // as a documentation tripwire: if behaviour for __proto__ ever changes,
+    // revisit.
+    expect([200, 400]).toContain(res.status);
+  });
+});

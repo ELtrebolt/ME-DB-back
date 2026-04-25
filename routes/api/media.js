@@ -122,7 +122,7 @@ router.post('/', (req, res) => {
              newTotal = updatedUser[safeMediaType] ? updatedUser[safeMediaType].total : 1;
          }
          
-         extra = {'userID':userID, 'ID':newTotal}
+         const extra = {'userID':userID, 'ID':newTotal}
 
          // place new record at end of its tier within the same group
          const placementQuery = { userID, mediaType, toDo: media.toDo, tier: media.tier };
@@ -214,66 +214,56 @@ router.put('/:mediaType/:group/:tier/reorder', async (req, res) => {
 // @route GET api/media/:id
 // @description Delete media by id
 // @access Private
-router.delete('/:mediaType/:ID', (req, res) => {
+router.delete('/:mediaType/:ID', async (req, res) => {
   const query = {
     userID: req.user.ID,
-    mediaType: req.params.mediaType, 
-    ID: req.params.ID, 
+    mediaType: req.params.mediaType,
+    ID: req.params.ID,
   };
 
-  User.findOne({ ID: req.user.ID })
-    .then(u => {
-      // Logic for standard types (anime/movies/etc)
-      // Check if we are deleting the last item in the sequence
-      let total;
-      if (u[req.params.mediaType]) {
-          total = u[req.params.mediaType].total;
-          
-          // Only decrement if we are deleting the item with ID == total (the last one)
-          // This keeps the sequence intact if we delete an item from the middle.
-          if(total == req.params.ID) {
-            User.findOneAndUpdate(
-              { ID: req.user.ID }, 
-              { $inc: { [`${req.params.mediaType}.total`]: -1 } }, 
-              { new: true }
-            )
-            .then(() => {})
-            .catch((err) => {
-              console.error('Error updating count in DELETE api/media:', err);
-            });
-          }
-      } 
-      // Logic for custom types (newTypes)
-      else if (u.newTypes && (u.newTypes.get ? u.newTypes.get(req.params.mediaType) : u.newTypes[req.params.mediaType])) {
-          const typeData = u.newTypes.get ? u.newTypes.get(req.params.mediaType) : u.newTypes[req.params.mediaType];
-          total = typeData.total;
-          
-          if(total == req.params.ID) {
-              User.findOneAndUpdate(
-                { ID: req.user.ID },
-                { $inc: { [`newTypes.${req.params.mediaType}.total`]: -1 } },
-                { new: true }
-              )
-              .then(() => {})
-              .catch(err => console.error("Error decrementing custom type count:", err));
-          }
-      }
-    })
-    .catch((err) => {
-      console.error('Error finding user in DELETE api/media:', err);
-    });
-
-  Media.findOneAndDelete(query)
-  .then(media => {
-    if (!media) {
+  try {
+    // Delete the media first so the count update only fires when the row really existed.
+    const deleted = await Media.findOneAndDelete(query);
+    if (!deleted) {
       return res.status(404).json({ error: 'No such a media' });
     }
-    res.json({ msg: 'Media entry deleted successfully', toDo: media.toDo });
-  })
-  .catch(err => {
+
+    // Decrement the per-type sequence counter only when the deleted item was the last in the sequence.
+    const u = await User.findOne({ ID: req.user.ID });
+    if (u) {
+      const isStandard = !!u[req.params.mediaType];
+      const customTypeData = !isStandard && u.newTypes
+        ? (u.newTypes.get ? u.newTypes.get(req.params.mediaType) : u.newTypes[req.params.mediaType])
+        : null;
+
+      let total;
+      let incPath;
+      if (isStandard) {
+        total = u[req.params.mediaType].total;
+        incPath = `${req.params.mediaType}.total`;
+      } else if (customTypeData) {
+        total = customTypeData.total;
+        incPath = `newTypes.${req.params.mediaType}.total`;
+      }
+
+      if (total !== undefined && total == req.params.ID) {
+        try {
+          await User.findOneAndUpdate(
+            { ID: req.user.ID },
+            { $inc: { [incPath]: -1 } }
+          );
+        } catch (countErr) {
+          // Media is already gone; log and continue rather than failing the response.
+          console.error('Error decrementing count after media delete:', countErr);
+        }
+      }
+    }
+
+    res.json({ msg: 'Media entry deleted successfully', toDo: deleted.toDo });
+  } catch (err) {
     console.error('Error deleting media:', err);
     res.status(500).json({ error: 'Error deleting media' });
-  });
+  }
 });
 
 router.delete('/:mediaType', (req, res) => {

@@ -118,52 +118,56 @@ router.post('/accept/:username', async (req, res) => {
       });
     }
 
+    // Idempotency: a duplicate accept (e.g. double-click, retry) should succeed
+    // rather than 404 because the underlying request was already consumed.
+    if (currentUser.friends && currentUser.friends.includes(senderID)) {
+      return res.json({
+        success: true,
+        message: 'Already friends',
+        alreadyFriends: true
+      });
+    }
+
     // Find the incoming request (where current user is the 'to')
     const requestIndex = currentUser.friendRequests?.findIndex(
-      req => req.from === senderID && 
-             req.to === currentUserID && 
+      req => req.from === senderID &&
+             req.to === currentUserID &&
              req.status === 'pending'
     );
 
     if (requestIndex === -1 || requestIndex === undefined) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Friend request not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Friend request not found'
       });
     }
 
-    // Update request status to 'accepted' in current user
-    currentUser.friendRequests[requestIndex].status = 'accepted';
-    await currentUser.save();
+    // Each user gets a single atomic update: mark the matching pending request
+    // as accepted AND add to friends in one DB operation, shrinking the window
+    // where a partial-failure can leave the two users out of sync.
+    const acceptFilter = { 'req.from': senderID, 'req.to': currentUserID, 'req.status': 'pending' };
 
-    // Update request status in sender user
-    const senderUserDoc = await User.findOne({ ID: senderID });
-    if (senderUserDoc) {
-      const senderRequestIndex = senderUserDoc.friendRequests?.findIndex(
-        req => req.from === senderID && 
-               req.to === currentUserID && 
-               req.status === 'pending'
-      );
-      if (senderRequestIndex !== -1 && senderRequestIndex !== undefined) {
-        senderUserDoc.friendRequests[senderRequestIndex].status = 'accepted';
-        await senderUserDoc.save();
-      }
-    }
-
-    // Add to friends arrays (if not already there)
-    await User.findOneAndUpdate(
+    await User.updateOne(
       { ID: currentUserID },
-      { $addToSet: { friends: senderID } }
+      {
+        $set: { 'friendRequests.$[req].status': 'accepted' },
+        $addToSet: { friends: senderID }
+      },
+      { arrayFilters: [acceptFilter] }
     );
 
-    await User.findOneAndUpdate(
+    await User.updateOne(
       { ID: senderID },
-      { $addToSet: { friends: currentUserID } }
+      {
+        $set: { 'friendRequests.$[req].status': 'accepted' },
+        $addToSet: { friends: currentUserID }
+      },
+      { arrayFilters: [acceptFilter] }
     );
 
-    res.json({ 
-      success: true, 
-      message: 'Friend request accepted' 
+    res.json({
+      success: true,
+      message: 'Friend request accepted'
     });
   } catch (err) {
     console.error('Error accepting friend request:', err);

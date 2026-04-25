@@ -8,6 +8,13 @@ const { validateUsername } = require('../../utils/validateUsername');
 const rateLimit = require('express-rate-limit');
 const { requireAuth } = require('../../middleware/auth');
 
+// Path-segment allowlists for routes that interpolate req.params into Mongo update paths.
+// Without these, a crafted URL like /api/user/__proto__/x/x or /api/user/email/x/x
+// can cause $set to write to arbitrary fields of the user document.
+const FIXED_MEDIA_TYPES = new Set(['movies', 'tv', 'anime', 'games']);
+const VALID_TIER_GROUPS = new Set(['collection', 'todo']);
+const SAFE_KEY_REGEX = /^[A-Za-z0-9_-]{1,30}$/;
+
 const publicProfileLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -135,19 +142,48 @@ router.put('/visibility', (req, res) => {
 
 // @route PUT api/user/mediaType/group/tier
 // @description Update TierTitle name
-router.put('/:mediaType/:group/:tier', (req, res) => {
+router.put('/:mediaType/:group/:tier', async (req, res) => {
     const mediaType = req.params.mediaType
     const group = req.params.group
     const tier = req.params.tier
-    const mediaTypeLoc = req.body.newType ? 'newTypes.' : ''
+    const isCustom = !!req.body.newType
+    const mediaTypeLoc = isCustom ? 'newTypes.' : ''
+
+    if (!VALID_TIER_GROUPS.has(group)) {
+      return res.status(400).json({ error: 'Invalid group' });
+    }
+    if (typeof tier !== 'string' || !SAFE_KEY_REGEX.test(tier)) {
+      return res.status(400).json({ error: 'Invalid tier key' });
+    }
+
+    if (isCustom) {
+      // For custom types, require the key to exist on this user's newTypes Map.
+      // Membership check is stronger than a regex because it confirms the key was
+      // already created via the validated /newTypes endpoint.
+      try {
+        const u = await User.findOne({ ID: req.user.ID });
+        const hasCustomType = u && u.newTypes && (
+          (typeof u.newTypes.has === 'function' && u.newTypes.has(mediaType)) ||
+          (typeof u.newTypes === 'object' && Object.prototype.hasOwnProperty.call(u.newTypes, mediaType))
+        );
+        if (!hasCustomType) {
+          return res.status(400).json({ error: 'Unknown custom media type' });
+        }
+      } catch (lookupErr) {
+        console.error('Error verifying custom media type:', lookupErr);
+        return res.status(500).json({ error: 'Unable to Update User Tier' });
+      }
+    } else if (!FIXED_MEDIA_TYPES.has(mediaType)) {
+      return res.status(400).json({ error: 'Invalid media type' });
+    }
 
     const newTitle = req.body.newTitle;
     if (!newTitle || typeof newTitle !== 'string' || newTitle.trim().length === 0 || newTitle.length > 50) {
       return res.status(400).json({ error: 'Tier title must be between 1 and 50 characters' });
     }
-    
+
     User.findOneAndUpdate(
-        { ID: req.user.ID }, 
+        { ID: req.user.ID },
         { $set: { [`${mediaTypeLoc}${mediaType}.${group}Tiers.${tier}`]: req.body.newTitle } },
         { new: true }
       )
@@ -183,6 +219,12 @@ router.put('/newTypes', async (req, res) => {
     const newType = req.body.newType;
     if (!newType || typeof newType !== 'string' || newType.trim().length === 0 || newType.length > 30) {
       return res.status(400).json({ error: 'Type name must be between 1 and 30 characters' });
+    }
+    if (!SAFE_KEY_REGEX.test(newType)) {
+      return res.status(400).json({ error: 'Type name may only contain letters, numbers, hyphens, and underscores' });
+    }
+    if (FIXED_MEDIA_TYPES.has(newType)) {
+      return res.status(400).json({ error: 'Type name conflicts with a built-in type' });
     }
 
     try {
