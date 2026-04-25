@@ -147,6 +147,21 @@ describe('DELETE /api/media/:mediaType/:ID', () => {
     expect(res.status).toBe(404);
     expect(res.body.error).toMatch(/No such a media/i);
   });
+
+  it('does not decrement count when media not found (404 path)', async () => {
+    const User = require('../../../models/User');
+    Media.findOneAndDelete.mockImplementationOnce(() => thenable(null));
+    User.findOneAndUpdate.mockClear();
+    const res = await request(app)
+      .delete('/api/media/movies/999')
+      .set('X-Test-User-ID', 'user1');
+    expect(res.status).toBe(404);
+    // requireAuth's lastActiveAt write may fire, but the per-type total $inc must not.
+    const incCalls = User.findOneAndUpdate.mock.calls.filter(([, update]) =>
+      update && update.$inc && Object.keys(update.$inc).some(k => k.endsWith('.total'))
+    );
+    expect(incCalls).toHaveLength(0);
+  });
 });
 
 describe('GET /api/media/export', () => {
