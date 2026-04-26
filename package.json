@@ -33,10 +33,10 @@
     "connect-mongo": "^5.1.0",
     "cors": "^2.8.6",
     "express": "^4.19.2",
-    "express-rate-limit": "^8.3.2",
+    "express-rate-limit": "^8.4.1",
     "express-session": "^1.19.0",
     "helmet": "^8.1.0",
-    "mongoose": "^8.23.0",
+    "mongoose": "^8.23.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "qs": "^6.15.1"
